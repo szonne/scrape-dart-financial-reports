@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# black
+black . --check

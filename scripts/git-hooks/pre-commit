@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# isort : for .py files
+files=$(git diff-index --cached --name-only --diff-filter=ACM HEAD | grep \.py$)
+[[ "$files" == "" ]] || isort $files
+
+# black : for .py files
+black .
