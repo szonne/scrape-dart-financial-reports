@@ -7,8 +7,7 @@ from config import BASE_URL, ReportCodes
 class Report:
     @staticmethod
     def get_data(
-        api_key: str,
-        corp_code: str,
+        api_key: str, corp_code: str,
         year: int,
         report_code: ReportCodes = ReportCodes.Q4,
         is_connected=False,
