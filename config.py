@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import TypedDict, List
-
+from typing import List
+from typing import TypedDict
 
 BASE_URL = "https://opendart.fss.or.kr/api"
 

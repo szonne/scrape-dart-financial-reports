@@ -1,17 +1,28 @@
 import pandas as pd
 import requests
 
+from accounts import BalanceSheetAccounts
+from accounts import CashFlowAccounts
+from accounts import IncomeStatementAccounts
+from accounts import get_bs_account_detail
+from accounts import get_cf_account_detail
+from accounts import get_cis_account_detail
 from auth import API_KEY
 from config import BASE_URL
 from config import AccountDetail
 from config import DartResponse
 from config import ReportCodes
-from accounts import BalanceSheetAccounts, get_bs_account_detail, IncomeStatementAccounts, get_cis_account_detail, CashFlowAccounts, get_cf_account_detail
 from corps import Corp
 
 
 class Report:
-    def __init__(self, corp_code: str, year: int, report_code: ReportCodes = ReportCodes.Q4, is_connected=False):
+    def __init__(
+        self,
+        corp_code: str,
+        year: int,
+        report_code: ReportCodes = ReportCodes.Q4,
+        is_connected=False,
+    ):
         self.corp_code = corp_code
         self.year = str(year)
         self.report_code = report_code
@@ -26,8 +37,8 @@ class Report:
         target_corp = corp_inst.find_by_code(corp_list=corp_list, code=self.corp_code)
 
         if target_corp:
-            return target_corp['corp_name']
-        return ''
+            return target_corp["corp_name"]
+        return ""
 
     def get_data(self) -> DartResponse:
         """
@@ -118,72 +129,88 @@ class Report:
 
     def get_bs_data(self) -> pd.DataFrame:
         # 재무상태표 (Balance sheet)
-        bs_df = self.df[self.df.sj_div == 'BS']
+        bs_df = self.df[self.df.sj_div == "BS"]
         thstrm_nm = bs_df.thstrm_nm.iloc[0]
         rows = []
         for account in BalanceSheetAccounts:
             account_detail = get_bs_account_detail(account)
-            rows.append({
-                'year': self.year,
-                'sj_div': 'BS',
-                'sj_nm': '재무상태표',
-                'thstrm_nm': thstrm_nm,
-                'account_nm': account.value,
-                'amount': self.get_account_amount(bs_df, account_detail=account_detail)
-            })
+            rows.append(
+                {
+                    "year": self.year,
+                    "sj_div": "BS",
+                    "sj_nm": "재무상태표",
+                    "thstrm_nm": thstrm_nm,
+                    "account_nm": account.value,
+                    "amount": self.get_account_amount(
+                        bs_df, account_detail=account_detail
+                    ),
+                }
+            )
 
         return pd.DataFrame(rows)
 
     def get_cis_data(self) -> pd.DataFrame:
         # 포괄손익계산서 (Comprehensive Income Statement)
-        cis_df = self.df[self.df.sj_div == 'CIS']
+        cis_df = self.df[self.df.sj_div == "CIS"]
         thstrm_nm = cis_df.thstrm_nm.iloc[0]
         rows = []
         for account in IncomeStatementAccounts:
             account_detail = get_cis_account_detail(account)
-            rows.append({
-                'year': self.year,
-                'sj_div': 'CIS',
-                'sj_nm': '포괄손익계산서',
-                'thstrm_nm': thstrm_nm,
-                'account_nm': account.value,
-                'amount': self.get_account_amount(cis_df, account_detail=account_detail)
-            })
+            rows.append(
+                {
+                    "year": self.year,
+                    "sj_div": "CIS",
+                    "sj_nm": "포괄손익계산서",
+                    "thstrm_nm": thstrm_nm,
+                    "account_nm": account.value,
+                    "amount": self.get_account_amount(
+                        cis_df, account_detail=account_detail
+                    ),
+                }
+            )
 
         return pd.DataFrame(rows)
 
     def get_cf_data(self) -> pd.DataFrame:
         # 현금흐름표 (Cash flow)
-        cf_df = self.df[self.df.sj_div == 'CF']
+        cf_df = self.df[self.df.sj_div == "CF"]
         thstrm_nm = cf_df.thstrm_nm.iloc[0]
         rows = []
         for account in CashFlowAccounts:
             account_detail = get_cf_account_detail(account)
-            rows.append({
-                'year': self.year,
-                'sj_div': 'CF',
-                'sj_nm': '현금흐름표',
-                'thstrm_nm': thstrm_nm,
-                'account_nm': account.value,
-                'amount': self.get_account_amount(cf_df, account_detail=account_detail)
-            })
+            rows.append(
+                {
+                    "year": self.year,
+                    "sj_div": "CF",
+                    "sj_nm": "현금흐름표",
+                    "thstrm_nm": thstrm_nm,
+                    "account_nm": account.value,
+                    "amount": self.get_account_amount(
+                        cf_df, account_detail=account_detail
+                    ),
+                }
+            )
 
         return pd.DataFrame(rows)
 
 
 class ReportCalculator:
-    def __init__(self, corp_code: str, year: int, is_connected: bool=False):
+    def __init__(self, corp_code: str, year: int, is_connected: bool = False):
         self.corp_code = corp_code
         self.year = year
         self.is_connected = is_connected
 
-    def get_annual_bs_data(self, is_accumulated:bool=False):
+    def get_annual_bs_data(self, is_accumulated: bool = False):
         """
         :param is_accumulated: True면 1->4분기 보고서까지 별도의 처리없이 누적값 리턴
         :return:
         """
         df = pd.DataFrame()
         for report_code in ReportCodes:
-            amount_col_name = f'{str(self.year)}.{report_code.name}'
-            report = Report(corp_code=self.corp_code, year=self.year, report_code=report_code.value, is_connected=self.is_connected)
-
+            amount_col_name = f"{str(self.year)}.{report_code.name}"
+            report = Report(
+                corp_code=self.corp_code,
+                year=self.year,
+                report_code=report_code.value,
+                is_connected=self.is_connected,
+            )
