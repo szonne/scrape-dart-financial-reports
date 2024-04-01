@@ -197,7 +197,7 @@ class ReportCalculator:
             if annual_df.empty:
                 return pd.DataFrame()
 
-            annual_df.rename(columns={'amount': str(year)}, inplace=True)
+            annual_df.rename(columns={"amount": str(year)}, inplace=True)
             return annual_df
 
         # 분기별 정보 취합
@@ -220,7 +220,9 @@ class ReportCalculator:
             # 분기별 재무상태표, 손익계산서, 현금흐름표 정보 취합
             for report_type in ReportTypes:
                 target_df = report.get_target_type_data(report_type=report_type)
-                quarter_df = pd.concat([quarter_df, target_df])
+                quarter_df = pd.concat([
+                    quarter_df, target_df
+                ])
 
             if quarter_df.empty:
                 continue
@@ -263,7 +265,7 @@ class ReportCalculator:
         self, start_year: int, end_year: int, by_quarter=True, is_accumulated=False
     ):
         total_df = pd.DataFrame()
-        join_on_columns = ['sj_div', 'sj_nm', 'account_nm']
+        join_on_columns = ["sj_div", "sj_nm", "account_nm"]
 
         for i, year in enumerate(range(start_year, end_year + 1)):
             annual_data = self.get_annual_data(
