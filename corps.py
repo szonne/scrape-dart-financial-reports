@@ -9,7 +9,6 @@ from pydash import py_
 
 from auth import API_KEY
 from config import BASE_URL
-from config import ReportCodes
 
 
 class Corp:

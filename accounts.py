@@ -23,6 +23,7 @@ class BalanceSheetAccounts(Enum):
     CURRENT_CONVERTIBLE_BONDS = "전환사채(유동)"
     SHORT_TERM_INCOME_RECEIVED_IN_ADVANCE = "선수수익(유동)"
     SHORT_TERM_ADVANCES_CUSTOMERS = "선수금(유동)"
+    # Todo. 비유동 선수수익, 선수금
 
     NON_CURRENT_LIABILITIES = "비유동부채"
     TRADE_AND_OTHER_NON_CURRENT_PAYABLES = "매입채무 및 기타채무(비유동)"
@@ -446,7 +447,7 @@ def get_cf_account_detail(account: CashFlowAccounts):
                 "dart_PurchaseOfOtherPropertyPlantAndEquipment",
             ],
         }
-    if account == CashFlowAccounts.SALES_OF_PROPERTY_PLAND_AND_EQUIPMENT:
+    if account == CashFlowAccounts.SALES_OF_PROPERTY_PLANT_AND_EQUIPMENT:
         return {
             "names": [
                 "유형자산의 처분",

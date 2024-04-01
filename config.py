@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import TypedDict
+from typing import TypedDict, List
+
 
 BASE_URL = "https://opendart.fss.or.kr/api"
 
@@ -12,8 +13,8 @@ class ReportCodes(Enum):
 
 
 class AccountDetail(TypedDict):
-    names: list[str]
-    ids: list[str]
+    names: List[str]
+    ids: List[str]
 
 
 class DartResponse(TypedDict):
