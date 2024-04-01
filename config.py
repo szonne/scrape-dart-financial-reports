@@ -24,6 +24,7 @@ class Units(Enum):
     THOUSAND = 1000
     MILLION = 1000 * 1000
 
+
 class AccountDetail(TypedDict):
     names: List[str]
     ids: List[str]

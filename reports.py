@@ -168,7 +168,9 @@ class Report:
 
 
 class ReportCalculator:
-    def __init__(self, corp_code: str, is_connected: bool = False, unit: Units = Units.DEFAULT):
+    def __init__(
+        self, corp_code: str, is_connected: bool = False, unit: Units = Units.DEFAULT
+    ):
         self.corp_code = corp_code
         self.is_connected = is_connected
         self.unit = unit

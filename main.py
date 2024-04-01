@@ -1,7 +1,8 @@
 import pandas as pd
+
+from config import Units
 from corps import Corp
 from reports import ReportCalculator
-from config import Units
 
 if __name__ == "__main__":
     corp_list = Corp.get_list()
@@ -21,8 +22,6 @@ if __name__ == "__main__":
         start_year=start_year, end_year=end_year, by_quarter=False
     )
 
-    with pd.ExcelWriter('원텍_단위_천원.xlsx', engine='openpyxl') as writer:
-        quarter_df.to_excel(writer, sheet_name='Quarter', index=False, header=True)
-        annual_df.to_excel(writer, sheet_name='Year', index=False, header=True)
-
-
+    with pd.ExcelWriter("원텍_단위_천원.xlsx", engine="openpyxl") as writer:
+        quarter_df.to_excel(writer, sheet_name="Quarter", index=False, header=True)
+        annual_df.to_excel(writer, sheet_name="Year", index=False, header=True)
