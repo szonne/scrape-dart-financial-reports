@@ -1,21 +1,12 @@
-from typing import TypedDict
+
 
 import pandas as pd
 import requests
 
 from auth import API_KEY
 from config import BASE_URL
-from config import ReportCodes
+from config import ReportCodes, DartResponse, AccountDetail
 
-
-class AccountDetail(TypedDict):
-    names: list[str]
-    ids: list[str]
-
-
-class DartResponse(TypedDict):
-    status: str
-    msg: str
 
 
 class Report:
@@ -27,6 +18,14 @@ class Report:
         is_connected=False,
         api_key=API_KEY,
     ) -> DartResponse:
+        """
+        :param corp_code:
+        :param year:
+        :param report_code:
+        :param is_connected: True일 경우 '연결재무제표'
+        :param api_key:
+        :return:
+        """
         params = {
             "crtfc_key": api_key,
             "corp_code": corp_code,
@@ -47,6 +46,21 @@ class Report:
             return False
 
         return True
+
+    def get_df(self, res: DartResponse) -> pd.DataFrame:
+        if not self.check_res_valid(res):
+            return pd.DataFrame()
+
+        df = pd.DataFrame(res['list'])
+        target_columns = [
+            'bsns_year', 'corp_code', 'sj_div', 'sj_nm',
+            'account_id', 'account_nm', 'account_detail',
+            'thstrm_nm', 'thstrm_amount',
+            'frmtrm_nm', 'frmtrm_amount',
+            'bfefrmtrm_nm', 'bfefrmtrm_amount'
+        ]
+
+        return df[target_columns]
 
     @staticmethod
     def filter_accounts(
