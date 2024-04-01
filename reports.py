@@ -4,14 +4,13 @@ import requests
 from accounts import BalanceSheetAccounts
 from accounts import CashFlowAccounts
 from accounts import IncomeStatementAccounts
-from accounts import get_bs_account_detail
-from accounts import get_cf_account_detail
-from accounts import get_cis_account_detail
+from accounts import get_account_detail
 from auth import API_KEY
 from config import BASE_URL
 from config import AccountDetail
 from config import DartResponse
 from config import ReportCodes
+from config import ReportTypes
 from corps import Corp
 
 
@@ -28,7 +27,7 @@ class Report:
         self.report_code = report_code
         self.is_connected = is_connected
         self.api_key = API_KEY
-        self.df = self.get_df()
+        self.raw_df = self.get_raw_df()
 
     @property
     def corp_name(self) -> str:
@@ -70,7 +69,7 @@ class Report:
 
         return True
 
-    def get_df(self) -> pd.DataFrame:
+    def get_raw_df(self) -> pd.DataFrame:
         data = self.get_data()
         if not self.check_data_valid(data):
             return pd.DataFrame()
@@ -86,6 +85,7 @@ class Report:
             "account_detail",
             "thstrm_nm",
             "thstrm_amount",
+            "thstrm_add_amount"
         ]
 
         return df[target_columns]
@@ -117,80 +117,43 @@ class Report:
             filtered = pd.concat([filtered, target_df])
 
         values = filtered.thstrm_amount.values
+        acc_values = filtered.thstrm_add_amount.values
+
         total = 0
-        for val in values:
+        for (val, acc_val) in zip(values, acc_values):
+            target_val = val if pd.isnull(acc_val) or not acc_val else acc_val
             try:
-                parsed = int(val)
+                parsed = int(target_val)
                 total += parsed
             except ValueError:
                 continue
 
         return total
 
-    def get_bs_data(self) -> pd.DataFrame:
-        # 재무상태표 (Balance sheet)
-        bs_df = self.df[self.df.sj_div == "BS"]
-        thstrm_nm = bs_df.thstrm_nm.iloc[0]
+    def get_target_type_data(self, report_type: ReportTypes) -> pd.DataFrame:
+        report_name = report_type.name
+        target_df = self.raw_df[self.raw_df.sj_div == report_name]
+        if report_type == ReportTypes.BS:
+            target_accounts = BalanceSheetAccounts
+        elif report_type == ReportTypes.CIS:
+            target_accounts = IncomeStatementAccounts
+        else:
+            target_accounts = CashFlowAccounts
+
         rows = []
-        for account in BalanceSheetAccounts:
-            account_detail = get_bs_account_detail(account)
+        for account in target_accounts:
+            account_detail = get_account_detail(report_type, account)
             rows.append(
                 {
                     "year": self.year,
-                    "sj_div": "BS",
+                    "sj_div": report_name,
                     "sj_nm": "재무상태표",
-                    "thstrm_nm": thstrm_nm,
                     "account_nm": account.value,
                     "amount": self.get_account_amount(
-                        bs_df, account_detail=account_detail
+                        target_df, account_detail=account_detail
                     ),
                 }
             )
-
-        return pd.DataFrame(rows)
-
-    def get_cis_data(self) -> pd.DataFrame:
-        # 포괄손익계산서 (Comprehensive Income Statement)
-        cis_df = self.df[self.df.sj_div == "CIS"]
-        thstrm_nm = cis_df.thstrm_nm.iloc[0]
-        rows = []
-        for account in IncomeStatementAccounts:
-            account_detail = get_cis_account_detail(account)
-            rows.append(
-                {
-                    "year": self.year,
-                    "sj_div": "CIS",
-                    "sj_nm": "포괄손익계산서",
-                    "thstrm_nm": thstrm_nm,
-                    "account_nm": account.value,
-                    "amount": self.get_account_amount(
-                        cis_df, account_detail=account_detail
-                    ),
-                }
-            )
-
-        return pd.DataFrame(rows)
-
-    def get_cf_data(self) -> pd.DataFrame:
-        # 현금흐름표 (Cash flow)
-        cf_df = self.df[self.df.sj_div == "CF"]
-        thstrm_nm = cf_df.thstrm_nm.iloc[0]
-        rows = []
-        for account in CashFlowAccounts:
-            account_detail = get_cf_account_detail(account)
-            rows.append(
-                {
-                    "year": self.year,
-                    "sj_div": "CF",
-                    "sj_nm": "현금흐름표",
-                    "thstrm_nm": thstrm_nm,
-                    "account_nm": account.value,
-                    "amount": self.get_account_amount(
-                        cf_df, account_detail=account_detail
-                    ),
-                }
-            )
-
         return pd.DataFrame(rows)
 
 
@@ -200,12 +163,12 @@ class ReportCalculator:
         self.year = year
         self.is_connected = is_connected
 
-    def get_annual_bs_data(self, is_accumulated: bool = False):
+    def get_annual_data_by_quarter(self, is_accumulated: bool = False):
         """
         :param is_accumulated: True면 1->4분기 보고서까지 별도의 처리없이 누적값 리턴
         :return:
         """
-        df = pd.DataFrame()
+        annual_df = pd.DataFrame()
         amount_cols = []
         for i, report_code in enumerate(ReportCodes):
             amount_col_name = f"{str(self.year)}.{report_code.name}"
@@ -213,27 +176,33 @@ class ReportCalculator:
             report = Report(
                 corp_code=self.corp_code,
                 year=self.year,
-                report_code=report_code.value,
+                report_code=report_code,
                 is_connected=self.is_connected,
             )
 
-            bs_df = report.get_bs_data()
-            bs_df.rename(columns={"amount": amount_col_name}, inplace=True)
+            quarter_df = pd.DataFrame()
+            for report_type in ReportTypes:
+                target_df = report.get_target_type_data(report_type=report_type)
+                quarter_df = pd.concat([quarter_df, target_df])
+
+            quarter_df.rename(columns={'amount': amount_col_name}, inplace=True)
 
             if i == 0:
-                df = bs_df.copy()
+                annual_df = quarter_df.copy()
             else:
-                df[amount_col_name] = bs_df[amount_col_name]
+                annual_df[amount_col_name] = quarter_df[amount_col_name]
 
         if is_accumulated:
-            return df
+            return annual_df
+
+        bs_df = annual_df[annual_df.sj_div == 'BS'].copy()
+        leftover_df = annual_df[annual_df.sj_div != 'BS'].copy()
 
         reversed_cols = list(reversed(amount_cols))
-        for i, col in reversed_cols:
+        for i, col in enumerate(reversed_cols):
             try:
                 prev_quarter_col = reversed_cols[i + 1]
-                df[col] = df[col] - df[prev_quarter_col]
+                leftover_df[col] = leftover_df[col] - leftover_df[prev_quarter_col]
             except IndexError:
                 pass
-
-        return df
+        return pd.concat([bs_df, leftover_df])

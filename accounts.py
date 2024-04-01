@@ -1,4 +1,5 @@
 from enum import Enum
+from config import ReportTypes
 
 
 class BalanceSheetAccounts(Enum):
@@ -75,6 +76,15 @@ class CashFlowAccounts(Enum):
     PROCEEDS_FROM_BORROWINGS = "차입금의 증가"
     REPAYMENTS_OF_BORROWINGS = "차입금의 감소"
     DIVIDENDS_PAID = "배당금 지급"
+
+
+def get_account_detail(report_type, account):
+    if report_type == ReportTypes.BS:
+        return get_bs_account_detail(account)
+    if report_type == ReportTypes.CIS:
+        return get_cis_account_detail(account)
+    if report_type == ReportTypes.CF:
+        return get_cf_account_detail(account)
 
 
 def get_bs_account_detail(account: BalanceSheetAccounts):

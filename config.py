@@ -12,6 +12,12 @@ class ReportCodes(Enum):
     Q4 = "11011"
 
 
+class ReportTypes(Enum):
+    BS = '재무상태표'
+    CIS = '포괄손익계산서'
+    CF = '현금흐름표'
+
+
 class AccountDetail(TypedDict):
     names: List[str]
     ids: List[str]
