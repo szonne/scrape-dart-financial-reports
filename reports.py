@@ -206,11 +206,36 @@ class ReportCalculator:
         :return:
         """
         df = pd.DataFrame()
-        for report_code in ReportCodes:
+        amount_cols = []
+        for i, report_code in enumerate(ReportCodes):
             amount_col_name = f"{str(self.year)}.{report_code.name}"
+            amount_cols.append(amount_col_name)
             report = Report(
                 corp_code=self.corp_code,
                 year=self.year,
                 report_code=report_code.value,
                 is_connected=self.is_connected,
             )
+
+            bs_df = report.get_bs_data()
+            bs_df.rename(columns={'amount': amount_col_name}, inplace=True)
+
+            if i == 0:
+                df = bs_df.copy()
+            else:
+                df[amount_col_name] = bs_df[amount_col_name]
+
+        if is_accumulated:
+            return df
+
+        reversed_cols = list(reversed(amount_cols))
+        for i, col in reversed_cols:
+            try:
+                prev_quarter_col = reversed_cols[i + 1]
+                df[col] = df[col] - df[prev_quarter_col]
+            except IndexError:
+                pass
+
+        return df
+
+
