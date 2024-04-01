@@ -10,6 +10,7 @@ class ReportCodes(Enum):
     Q3 = "11014"
     Q4 = "11011"
 
+
 class AccountDetail(TypedDict):
     names: list[str]
     ids: list[str]

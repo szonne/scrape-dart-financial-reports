@@ -1,12 +1,11 @@
-
-
 import pandas as pd
 import requests
 
 from auth import API_KEY
 from config import BASE_URL
-from config import ReportCodes, DartResponse, AccountDetail
-
+from config import AccountDetail
+from config import DartResponse
+from config import ReportCodes
 
 
 class Report:
@@ -51,13 +50,21 @@ class Report:
         if not self.check_res_valid(res):
             return pd.DataFrame()
 
-        df = pd.DataFrame(res['list'])
+        df = pd.DataFrame(res["list"])
         target_columns = [
-            'bsns_year', 'corp_code', 'sj_div', 'sj_nm',
-            'account_id', 'account_nm', 'account_detail',
-            'thstrm_nm', 'thstrm_amount',
-            'frmtrm_nm', 'frmtrm_amount',
-            'bfefrmtrm_nm', 'bfefrmtrm_amount'
+            "bsns_year",
+            "corp_code",
+            "sj_div",
+            "sj_nm",
+            "account_id",
+            "account_nm",
+            "account_detail",
+            "thstrm_nm",
+            "thstrm_amount",
+            "frmtrm_nm",
+            "frmtrm_amount",
+            "bfefrmtrm_nm",
+            "bfefrmtrm_amount",
         ]
 
         return df[target_columns]
