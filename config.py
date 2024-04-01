@@ -13,9 +13,9 @@ class ReportCodes(Enum):
 
 
 class ReportTypes(Enum):
-    BS = '재무상태표'
-    CIS = '포괄손익계산서'
-    CF = '현금흐름표'
+    BS = "재무상태표"
+    CIS = "포괄손익계산서"
+    CF = "현금흐름표"
 
 
 class AccountDetail(TypedDict):

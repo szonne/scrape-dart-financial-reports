@@ -1,16 +1,17 @@
-# This is a sample Python script.
-
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from reports import ReportCalculator
+from corps import Corp
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f"Hi, {name}")  # Press ⌘F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
 if __name__ == "__main__":
-    print_hi("PyCharm")
+    corp_list = Corp.get_list()
+    target_corp = Corp.find_by_name(corp_list, '원텍')
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    report_calculator = ReportCalculator(corp_code=target_corp['corp_code'], is_connected=True)
+    df = report_calculator.get_annual_data_by_period(
+        start_year=2021,
+        end_year=2023,
+        by_quarter=True,
+        is_accumulated=False
+    )
+
+    df.to_excel('원텍.xlsx', index=False)

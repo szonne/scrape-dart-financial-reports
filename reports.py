@@ -85,7 +85,7 @@ class Report:
             "account_detail",
             "thstrm_nm",
             "thstrm_amount",
-            "thstrm_add_amount"
+            "thstrm_add_amount",
         ]
 
         return df[target_columns]
@@ -120,7 +120,7 @@ class Report:
         acc_values = filtered.thstrm_add_amount.values
 
         total = 0
-        for (val, acc_val) in zip(values, acc_values):
+        for val, acc_val in zip(values, acc_values):
             target_val = val if pd.isnull(acc_val) or not acc_val else acc_val
             try:
                 parsed = int(target_val)
@@ -145,7 +145,6 @@ class Report:
             account_detail = get_account_detail(report_type, account)
             rows.append(
                 {
-                    "year": self.year,
                     "sj_div": report_name,
                     "sj_nm": "재무상태표",
                     "account_nm": account.value,
@@ -158,24 +157,33 @@ class Report:
 
 
 class ReportCalculator:
-    def __init__(self, corp_code: str, year: int, is_connected: bool = False):
+    def __init__(self, corp_code: str, is_connected: bool = False):
         self.corp_code = corp_code
-        self.year = year
         self.is_connected = is_connected
 
-    def get_annual_data_by_quarter(self, is_accumulated: bool = False):
+    def get_annual_data(self, year: int, by_quarter: bool = True, is_accumulated: bool = False):
         """
-        :param is_accumulated: True면 1->4분기 보고서까지 별도의 처리없이 누적값 리턴
+        :param year
+        :param is_accumulated: True -> 별도의 처리없이 누적값 리턴
+        :param by_quarter: False -> 연간사업보고서 값만 리턴, True -> 분기별 보고서 리턴
         :return:
         """
         annual_df = pd.DataFrame()
         amount_cols = []
         for i, report_code in enumerate(ReportCodes):
-            amount_col_name = f"{str(self.year)}.{report_code.name}"
+
+            if not by_quarter and report_code != ReportCodes.Q4:
+                continue
+
+            if by_quarter:
+                amount_col_name = f"{str(year)}.{report_code.name}"
+            else:
+                amount_col_name = str(year)
+
             amount_cols.append(amount_col_name)
             report = Report(
                 corp_code=self.corp_code,
-                year=self.year,
+                year=year,
                 report_code=report_code,
                 is_connected=self.is_connected,
             )
@@ -185,18 +193,22 @@ class ReportCalculator:
                 target_df = report.get_target_type_data(report_type=report_type)
                 quarter_df = pd.concat([quarter_df, target_df])
 
-            quarter_df.rename(columns={'amount': amount_col_name}, inplace=True)
+            quarter_df.rename(columns={"amount": amount_col_name}, inplace=True)
 
-            if i == 0:
+            if not by_quarter or i == 0:
                 annual_df = quarter_df.copy()
             else:
                 annual_df[amount_col_name] = quarter_df[amount_col_name]
 
+        if not by_quarter:
+            return annual_df
+
         if is_accumulated:
             return annual_df
 
-        bs_df = annual_df[annual_df.sj_div == 'BS'].copy()
-        leftover_df = annual_df[annual_df.sj_div != 'BS'].copy()
+        # 손익계산서, 현금흐름표는 누적값이므로 별도 처리
+        bs_df = annual_df[annual_df.sj_div == "BS"].copy()
+        leftover_df = annual_df[annual_df.sj_div != "BS"].copy()
 
         reversed_cols = list(reversed(amount_cols))
         for i, col in enumerate(reversed_cols):
@@ -206,3 +218,20 @@ class ReportCalculator:
             except IndexError:
                 pass
         return pd.concat([bs_df, leftover_df])
+
+    # Todo. 중간에 데이터가 없는 경우 처리
+    # 원텍 2022년 2분기부터 데이터 있음
+    def get_annual_data_by_period(self, start_year: int, end_year: int, by_quarter=True, is_accumulated=False):
+        total_df = pd.DataFrame()
+        amount_col_num = 4 if by_quarter else 1
+        join_on_columns = None
+
+        for i, year in enumerate(range(start_year, end_year + 1)):
+            annual_data = self.get_annual_data(year=year, by_quarter=by_quarter, is_accumulated=is_accumulated)
+            if i == 0:
+                total_df = annual_data.copy()
+                join_on_columns = list(total_df.columns)[:-amount_col_num]
+            else:
+                total_df = pd.merge(total_df, annual_data, left_on=join_on_columns, right_on=join_on_columns)
+
+        return total_df
