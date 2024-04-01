@@ -5,6 +5,7 @@ import requests
 
 from config import BASE_URL
 from config import ReportCodes
+from auth import API_KEY
 
 
 class AccountDetail(TypedDict):
@@ -20,11 +21,11 @@ class DartResponse(TypedDict):
 class Report:
     @staticmethod
     def get_data(
-        api_key: str,
         corp_code: str,
         year: int,
         report_code: ReportCodes = ReportCodes.Q4,
         is_connected=False,
+        api_key=API_KEY,
     ) -> DartResponse:
         params = {
             "crtfc_key": api_key,

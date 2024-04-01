@@ -8,11 +8,12 @@ import requests
 from pydash import py_
 
 from config import BASE_URL, ReportCodes
+from auth import API_KEY
 
 
 class Corp:
     @staticmethod
-    def get_list(api_key: str):
+    def get_list(api_key=API_KEY):
         if not (
             "corpCode" in os.listdir(".") and "CORPCODE.xml" in os.listdir("corpCode")
         ):
