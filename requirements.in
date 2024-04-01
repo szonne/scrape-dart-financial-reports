@@ -3,3 +3,6 @@ requests
 pandas
 isort
 black
+jupyterlab
+notebook
+pip-tools

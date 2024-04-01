@@ -116,11 +116,19 @@ class Report:
             ]
             filtered = pd.concat([filtered, target_df])
 
+        # 표준계정코드 미사용의 경우 계정과목명으로 비교
+        # 이 과정에서 중복되는 행 발생할 수 있음 (띄어쓰기 비교)
+        filtered.drop_duplicates(inplace=True)
+
+        # 분기 데이터
         values = filtered.thstrm_amount.values
+        # 분기 누적 데이터
         acc_values = filtered.thstrm_add_amount.values
 
         total = 0
         for val, acc_val in zip(values, acc_values):
+            # 값이 없는 경우를 제외하면 기본적으로 누적값 사용
+            # 분기별로 값을 처리하는 과정은 get_annual_data 함수에서 따로 진행
             target_val = val if pd.isnull(acc_val) or not acc_val else acc_val
             try:
                 parsed = int(target_val)
@@ -131,8 +139,10 @@ class Report:
         return total
 
     def get_target_type_data(self, report_type: ReportTypes) -> pd.DataFrame:
-        report_name = report_type.name
-        target_df = self.raw_df[self.raw_df.sj_div == report_name]
+        if self.raw_df.empty:
+            return pd.DataFrame()
+
+        target_df = self.raw_df[self.raw_df.sj_div == report_type.name]
         if report_type == ReportTypes.BS:
             target_accounts = BalanceSheetAccounts
         elif report_type == ReportTypes.CIS:
@@ -145,8 +155,8 @@ class Report:
             account_detail = get_account_detail(report_type, account)
             rows.append(
                 {
-                    "sj_div": report_name,
-                    "sj_nm": "재무상태표",
+                    "sj_div": report_type.name,
+                    "sj_nm": report_type.value,
                     "account_nm": account.value,
                     "amount": self.get_account_amount(
                         target_df, account_detail=account_detail
@@ -170,19 +180,34 @@ class ReportCalculator:
         :param by_quarter: False -> 연간사업보고서 값만 리턴, True -> 분기별 보고서 리턴
         :return:
         """
+        # 연간사업보고서 정보만 취합
+        if not by_quarter:
+            report = Report(
+                corp_code=self.corp_code,
+                year=year,
+                report_code=ReportCodes.Q4,
+                is_connected=self.is_connected,
+            )
+
+            annual_df = pd.DataFrame()
+            for report_type in ReportTypes:
+                target_df = report.get_target_type_data(report_type=report_type)
+                annual_df = pd.concat([annual_df, target_df])
+
+            if annual_df.empty:
+                return pd.DataFrame()
+
+            annual_df.rename(columns={'amount': str(year)}, inplace=True)
+            return annual_df
+
+        # 분기별 정보 취합
         annual_df = pd.DataFrame()
+
+        # 분기별 컬럼명 저장
         amount_cols = []
+
         for i, report_code in enumerate(ReportCodes):
-
-            if not by_quarter and report_code != ReportCodes.Q4:
-                continue
-
-            if by_quarter:
-                amount_col_name = f"{str(year)}.{report_code.name}"
-            else:
-                amount_col_name = str(year)
-
-            amount_cols.append(amount_col_name)
+            amount_col_name = f"{str(year)}.{report_code.name}"
             report = Report(
                 corp_code=self.corp_code,
                 year=year,
@@ -191,22 +216,33 @@ class ReportCalculator:
             )
 
             quarter_df = pd.DataFrame()
+
+            # 분기별 재무상태표, 손익계산서, 현금흐름표 정보 취합
             for report_type in ReportTypes:
                 target_df = report.get_target_type_data(report_type=report_type)
                 quarter_df = pd.concat([quarter_df, target_df])
 
+            if quarter_df.empty:
+                continue
+
+            # 분기 데이터가 있을 때에만 컬럼명 저장
+            amount_cols.append(amount_col_name)
             quarter_df.rename(columns={"amount": amount_col_name}, inplace=True)
 
-            if not by_quarter or i == 0:
+            # 1분기 데이터이거나 혹은 이전 분기까지 데이터가 없었던 경우(ex. Q2부터 사업보고서 나오기 시작한 case)
+            if i == 0 or annual_df.empty:
                 annual_df = quarter_df.copy()
+
+            # 분기 데이터를 새 열에 추가
             else:
                 annual_df[amount_col_name] = quarter_df[amount_col_name]
 
-        if not by_quarter:
-            return annual_df
-
+        # 누적 데이터인 경우 별도의 처리 없이 바로 return
         if is_accumulated:
             return annual_df
+
+        if annual_df.empty:
+            return pd.DataFrame()
 
         # 손익계산서, 현금흐름표는 누적값이므로 별도 처리
         bs_df = annual_df[annual_df.sj_div == "BS"].copy()
@@ -227,8 +263,7 @@ class ReportCalculator:
         self, start_year: int, end_year: int, by_quarter=True, is_accumulated=False
     ):
         total_df = pd.DataFrame()
-        amount_col_num = 4 if by_quarter else 1
-        join_on_columns = None
+        join_on_columns = ['sj_div', 'sj_nm', 'account_nm']
 
         for i, year in enumerate(range(start_year, end_year + 1)):
             annual_data = self.get_annual_data(
@@ -236,7 +271,6 @@ class ReportCalculator:
             )
             if i == 0:
                 total_df = annual_data.copy()
-                join_on_columns = list(total_df.columns)[:-amount_col_num]
             else:
                 total_df = pd.merge(
                     total_df,

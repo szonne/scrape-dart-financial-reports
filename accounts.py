@@ -4,8 +4,6 @@ from config import ReportTypes
 
 
 class BalanceSheetAccounts(Enum):
-    ASSETS = "자산총계"
-
     CURRENT_ASSETS = "유동자산"
     CASH_AND_CASH_EQUIVALENTS = "현금및현금성자산"
     TRADE_AND_OTHER_CURRENT_RECEIVABLES = "매출채권 및 기타채권"
@@ -18,7 +16,8 @@ class BalanceSheetAccounts(Enum):
     PROPERTY_PLANT_AND_EQUIPMENT = "유형자산"
     INTANGIBLE_ASSETS = "무형자산"
 
-    LIABILITIES = "부채총계"
+    ASSETS = "자산총계"
+
     CURRENT_LIABILITIES = "유동부채"
     TRADE_AND_OTHER_CURRENT_PAYABLES = "매입채무 및 기타채무"
     SHORT_TERM_BORROWINGS = "단기차입금"
@@ -34,9 +33,11 @@ class BalanceSheetAccounts(Enum):
     LONG_TERM_INCOME_RECEIVED_IN_ADVANCE = "선수수익(비유동)"
     LONG_TERM_ADVANCES_CUSTOMERS = "선수금(비유동)"
 
-    EQUITY = "자본총계"
-    RETAINED_EARNINGS = "이익잉여금"
+    LIABILITIES = "부채총계"
+
     ISSUED_CAPITAL = "자본금"
+    RETAINED_EARNINGS = "이익잉여금"
+    EQUITY = "자본총계"
 
     EQUITY_AND_LIABILITIES = "자본과부채총계"
 

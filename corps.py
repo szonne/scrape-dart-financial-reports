@@ -17,7 +17,7 @@ class Corp:
         if not (
             "corpCode" in os.listdir(".") and "CORPCODE.xml" in os.listdir("corpCode")
         ):
-            target_url = f"{BASE_URL}/corpCode/CORPCODE.xml"
+            target_url = f"{BASE_URL}/corpCode.xml"
             res = requests.get(target_url, params={"crtfc_key": api_key})
 
             with ZipFile(BytesIO(res.content)) as zipfile:
