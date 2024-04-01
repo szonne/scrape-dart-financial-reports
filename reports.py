@@ -4,6 +4,18 @@ import requests
 from config import BASE_URL
 from config import ReportCodes
 
+from typing import TypedDict
+
+
+class AccountDetail(TypedDict):
+    names: list[str]
+    ids: list[str]
+
+
+class DartResponse(TypedDict):
+    status: str
+    msg: str
+
 
 class Report:
     @staticmethod
@@ -13,7 +25,7 @@ class Report:
         year: int,
         report_code: ReportCodes = ReportCodes.Q4,
         is_connected=False,
-    ):
+    ) -> DartResponse:
         params = {
             "crtfc_key": api_key,
             "corp_code": corp_code,
@@ -26,7 +38,7 @@ class Report:
         return res.json()
 
     @staticmethod
-    def check_res_valid(res):
+    def check_res_valid(res: DartResponse):
         if res["status"] == "013":
             return False
 
@@ -36,7 +48,7 @@ class Report:
         return True
 
     @staticmethod
-    def filter_accounts(report_df, account_detail):
+    def filter_accounts(report_df: pd.DataFrame, account_detail: AccountDetail) -> pd.DataFrame:
         filtered = pd.DataFrame()
 
         names = account_detail["names"]
