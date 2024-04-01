@@ -1,10 +1,10 @@
+from typing import TypedDict
+
 import pandas as pd
 import requests
 
 from config import BASE_URL
 from config import ReportCodes
-
-from typing import TypedDict
 
 
 class AccountDetail(TypedDict):
@@ -48,7 +48,9 @@ class Report:
         return True
 
     @staticmethod
-    def filter_accounts(report_df: pd.DataFrame, account_detail: AccountDetail) -> pd.DataFrame:
+    def filter_accounts(
+        report_df: pd.DataFrame, account_detail: AccountDetail
+    ) -> pd.DataFrame:
         filtered = pd.DataFrame()
 
         names = account_detail["names"]
