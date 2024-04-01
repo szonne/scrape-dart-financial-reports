@@ -31,13 +31,14 @@ if __name__ == "__main__":
 
     filename = f"{target_corp['corp_name']}_{str(start_year)}_{str(end_year)}_unit_{report_calculator.unit.name.lower()}.xlsx"
     with pd.ExcelWriter(filename, engine="xlsxwriter") as writer:
-        quarter_df.to_excel(writer, sheet_name="Quarter", index=False, header=True, float_format='#,###')
-        annual_df.to_excel(writer, sheet_name="Year", index=False, header=True, float_format='#,###')
+        quarter_df.to_excel(
+            writer, sheet_name="Quarter", index=False, header=True, float_format="#,###"
+        )
+        annual_df.to_excel(
+            writer, sheet_name="Year", index=False, header=True, float_format="#,###"
+        )
 
         workbook = writer.book
-        float_format = workbook.add_format({'num_format': '#,##0'})
-        for worksheet in [writer.sheets['Quarter'], writer.sheets['Year']]:
+        float_format = workbook.add_format({"num_format": "#,##0"})
+        for worksheet in [writer.sheets["Quarter"], writer.sheets["Year"]]:
             worksheet.set_column(0, 1000, width=cell_width, cell_format=float_format)
-
-
-
