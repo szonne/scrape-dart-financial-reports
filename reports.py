@@ -161,7 +161,9 @@ class ReportCalculator:
         self.corp_code = corp_code
         self.is_connected = is_connected
 
-    def get_annual_data(self, year: int, by_quarter: bool = True, is_accumulated: bool = False):
+    def get_annual_data(
+        self, year: int, by_quarter: bool = True, is_accumulated: bool = False
+    ):
         """
         :param year
         :param is_accumulated: True -> 별도의 처리없이 누적값 리턴
@@ -221,17 +223,26 @@ class ReportCalculator:
 
     # Todo. 중간에 데이터가 없는 경우 처리
     # 원텍 2022년 2분기부터 데이터 있음
-    def get_annual_data_by_period(self, start_year: int, end_year: int, by_quarter=True, is_accumulated=False):
+    def get_annual_data_by_period(
+        self, start_year: int, end_year: int, by_quarter=True, is_accumulated=False
+    ):
         total_df = pd.DataFrame()
         amount_col_num = 4 if by_quarter else 1
         join_on_columns = None
 
         for i, year in enumerate(range(start_year, end_year + 1)):
-            annual_data = self.get_annual_data(year=year, by_quarter=by_quarter, is_accumulated=is_accumulated)
+            annual_data = self.get_annual_data(
+                year=year, by_quarter=by_quarter, is_accumulated=is_accumulated
+            )
             if i == 0:
                 total_df = annual_data.copy()
                 join_on_columns = list(total_df.columns)[:-amount_col_num]
             else:
-                total_df = pd.merge(total_df, annual_data, left_on=join_on_columns, right_on=join_on_columns)
+                total_df = pd.merge(
+                    total_df,
+                    annual_data,
+                    left_on=join_on_columns,
+                    right_on=join_on_columns,
+                )
 
         return total_df
