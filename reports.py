@@ -218,7 +218,7 @@ class ReportCalculator:
             )
 
             bs_df = report.get_bs_data()
-            bs_df.rename(columns={'amount': amount_col_name}, inplace=True)
+            bs_df.rename(columns={"amount": amount_col_name}, inplace=True)
 
             if i == 0:
                 df = bs_df.copy()
@@ -237,5 +237,3 @@ class ReportCalculator:
                 pass
 
         return df
-
-
