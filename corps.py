@@ -7,8 +7,9 @@ from zipfile import ZipFile
 import requests
 from pydash import py_
 
-from config import BASE_URL, ReportCodes
 from auth import API_KEY
+from config import BASE_URL
+from config import ReportCodes
 
 
 class Corp:

@@ -3,9 +3,9 @@ from typing import TypedDict
 import pandas as pd
 import requests
 
+from auth import API_KEY
 from config import BASE_URL
 from config import ReportCodes
-from auth import API_KEY
 
 
 class AccountDetail(TypedDict):
