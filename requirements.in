@@ -5,4 +5,4 @@ isort
 black
 jupyterlab
 notebook
-pip-tools
+openpyxl

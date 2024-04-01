@@ -32,8 +32,6 @@ black==24.3.0
     # via -r requirements.in
 bleach==6.1.0
     # via nbconvert
-build==1.2.1
-    # via pip-tools
 certifi==2024.2.2
     # via
     #   httpcore
@@ -44,9 +42,7 @@ cffi==1.16.0
 charset-normalizer==3.3.2
     # via requests
 click==8.1.7
-    # via
-    #   black
-    #   pip-tools
+    # via black
 comm==0.2.2
     # via ipykernel
 debugpy==1.8.1
@@ -55,6 +51,8 @@ decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
+et-xmlfile==1.1.0
+    # via openpyxl
 exceptiongroup==1.2.0
     # via
     #   anyio
@@ -172,12 +170,13 @@ notebook-shim==0.2.4
     #   notebook
 numpy==1.26.4
     # via pandas
+openpyxl==3.1.2
+    # via -r requirements.in
 overrides==7.7.0
     # via jupyter-server
 packaging==24.0
     # via
     #   black
-    #   build
     #   ipykernel
     #   jupyter-server
     #   jupyterlab
@@ -193,8 +192,6 @@ pathspec==0.12.1
     # via black
 pexpect==4.9.0
     # via ipython
-pip-tools==7.4.1
-    # via -r requirements.in
 platformdirs==4.2.0
     # via
     #   black
@@ -219,10 +216,6 @@ pygments==2.17.2
     # via
     #   ipython
     #   nbconvert
-pyproject-hooks==1.0.0
-    # via
-    #   build
-    #   pip-tools
 python-dateutil==2.9.0.post0
     # via
     #   arrow
@@ -285,10 +278,7 @@ tinycss2==1.2.1
 tomli==2.0.1
     # via
     #   black
-    #   build
     #   jupyterlab
-    #   pip-tools
-    #   pyproject-hooks
 tornado==6.4
     # via
     #   ipykernel
@@ -336,9 +326,3 @@ webencodings==0.5.1
     #   tinycss2
 websocket-client==1.7.0
     # via jupyter-server
-wheel==0.43.0
-    # via pip-tools
-
-# The following packages are considered to be unsafe in a requirements file:
-# pip
-# setuptools

@@ -62,9 +62,10 @@ class IncomeStatementAccounts(Enum):
 class CashFlowAccounts(Enum):
     OPERATING_ACTIVITIES = "영업활동현금흐름"
     PROFIT_LOSS = "당기순이익"
-    ADJUSTMENTS_FOR_ASSETS_LIABILITIES_OF_OPERATING_ACTIVITIES = (
-        "영업으로부터 창출된 현금흐름"
-    )
+    # Todo. 분류가 명확하지 않은 경우가 너무 많음
+    # ADJUSTMENTS_FOR_ASSETS_LIABILITIES_OF_OPERATING_ACTIVITIES = (
+    #     "영업으로부터 창출된 현금흐름"
+    # )
     INTEREST_PAID = "이자지급"
     INTEREST_RECEIVED = "이자수취"
 
@@ -357,25 +358,26 @@ def get_cf_account_detail(account: CashFlowAccounts):
         }
     if account == CashFlowAccounts.PROFIT_LOSS:
         return {"names": ["당기순이익"], "ids": ["ifrs-full_ProfitLoss"]}
-    if (
-        account
-        == CashFlowAccounts.ADJUSTMENTS_FOR_ASSETS_LIABILITIES_OF_OPERATING_ACTIVITIES
-    ):
-        return {
-            "names": [
-                "영업으로부터 창출된 현금흐름",
-                "영업에서 창출된 현금",
-                "영업으로부터창출된현금",
-                "영업에서 창출한 현금흐름",
-                "영업활동에서창출된현금흐름",
-            ],
-            "ids": [
-                "dart_NetCashflowsFromUsedInOperations",
-                "dart_AdjustmentsForAssetsLiabilitiesOfOperatingActivities",
-                "ifrs-full_OtherInflowsOutflowsOfCashClassifiedAsOperatingActivities",
-                "ifrs-full_AdjustmentsForReconcileProfitLoss",
-            ],
-        }
+
+    # if (
+    #     account
+    #     == CashFlowAccounts.ADJUSTMENTS_FOR_ASSETS_LIABILITIES_OF_OPERATING_ACTIVITIES
+    # ):
+    #     return {
+    #         "names": [
+    #             "영업으로부터 창출된 현금흐름",
+    #             "영업에서 창출된 현금",
+    #             "영업으로부터창출된현금",
+    #             "영업에서 창출한 현금흐름",
+    #             "영업활동에서창출된현금흐름",
+    #         ],
+    #         "ids": [
+    #             "dart_NetCashflowsFromUsedInOperations",
+    #             "dart_AdjustmentsForAssetsLiabilitiesOfOperatingActivities",
+    #             "ifrs-full_OtherInflowsOutflowsOfCashClassifiedAsOperatingActivities",
+    #             "ifrs-full_AdjustmentsForReconcileProfitLoss",
+    #         ],
+    #     }
 
     if account == CashFlowAccounts.INTEREST_PAID:
         return {

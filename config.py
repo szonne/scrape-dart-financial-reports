@@ -18,6 +18,12 @@ class ReportTypes(Enum):
     CF = "현금흐름표"
 
 
+# Currency = Korean WON
+class Units(Enum):
+    DEFAULT = 1
+    THOUSAND = 1000
+    MILLION = 1000 * 1000
+
 class AccountDetail(TypedDict):
     names: List[str]
     ids: List[str]

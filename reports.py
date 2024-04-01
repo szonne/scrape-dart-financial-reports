@@ -11,6 +11,7 @@ from config import AccountDetail
 from config import DartResponse
 from config import ReportCodes
 from config import ReportTypes
+from config import Units
 from corps import Corp
 
 
@@ -167,9 +168,17 @@ class Report:
 
 
 class ReportCalculator:
-    def __init__(self, corp_code: str, is_connected: bool = False):
+    def __init__(self, corp_code: str, is_connected: bool = False, unit: Units = Units.DEFAULT):
         self.corp_code = corp_code
         self.is_connected = is_connected
+        self.unit = unit
+
+    def refine_unit(self, df):
+        for col in df.columns:
+            if df[col].dtype == int:
+                df[col] = df[col].apply(lambda val: int(val / self.unit.value))
+
+        return df
 
     def get_annual_data(
         self, year: int, by_quarter: bool = True, is_accumulated: bool = False
@@ -198,7 +207,7 @@ class ReportCalculator:
                 return pd.DataFrame()
 
             annual_df.rename(columns={"amount": str(year)}, inplace=True)
-            return annual_df
+            return self.refine_unit(annual_df)
 
         # 분기별 정보 취합
         annual_df = pd.DataFrame()
@@ -239,7 +248,7 @@ class ReportCalculator:
 
         # 누적 데이터인 경우 별도의 처리 없이 바로 return
         if is_accumulated:
-            return annual_df
+            return self.refine_unit(annual_df)
 
         if annual_df.empty:
             return pd.DataFrame()
@@ -255,7 +264,8 @@ class ReportCalculator:
                 leftover_df[col] = leftover_df[col] - leftover_df[prev_quarter_col]
             except IndexError:
                 pass
-        return pd.concat([bs_df, leftover_df])
+        merged = pd.concat([bs_df, leftover_df])
+        return self.refine_unit(merged)
 
     # Todo. 중간에 데이터가 없는 경우 처리
     # 원텍 2022년 2분기부터 데이터 있음
