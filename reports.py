@@ -27,9 +27,9 @@ class Report:
 
         target_corp = Corp.find_by_code(corp_code)
         if not target_corp:
-            raise ValueError('Invalid corp_code')
+            raise ValueError("Invalid corp_code")
 
-        self.corp_name = target_corp['corp_name']
+        self.corp_name = target_corp["corp_name"]
         self.year = str(year)
         self.report_code = report_code
         self.is_connected = is_connected
@@ -165,10 +165,14 @@ class Report:
 
 class ReportCalculator:
     def __init__(
-        self, corp_name: str = None, corp_code: str = None, is_connected: bool = False, unit: Units = Units.DEFAULT
+        self,
+        corp_name: str = None,
+        corp_code: str = None,
+        is_connected: bool = False,
+        unit: Units = Units.DEFAULT,
     ):
         if not corp_code and not corp_name:
-            raise ValueError('Either corp_name or corp_code should be vaild')
+            raise ValueError("Either corp_name or corp_code should be vaild")
 
         if corp_code:
             target_corp = Corp.find_by_code(code=corp_code)
@@ -176,10 +180,10 @@ class ReportCalculator:
             target_corp = Corp.find_by_name(name=corp_name)
 
         if not target_corp:
-            raise ValueError('Invalid corp_code')
+            raise ValueError("Invalid corp_code")
 
-        self.corp_code = target_corp['corp_code']
-        self.corp_name = target_corp['corp_name']
+        self.corp_code = target_corp["corp_code"]
+        self.corp_name = target_corp["corp_name"]
         self.is_connected = is_connected
         self.unit = unit
 
@@ -298,23 +302,30 @@ class ReportCalculator:
                 )
 
         # Drop unused column
-        total_df.drop(['sj_div'], axis=1, inplace=True)
+        total_df.drop(["sj_div"], axis=1, inplace=True)
 
         return total_df
 
-    def write_data(self, start_year: int, end_year: int, is_accumulated:bool = False, filename=None, cell_width=None):
+    def write_data(
+        self,
+        start_year: int,
+        end_year: int,
+        is_accumulated: bool = False,
+        filename=None,
+        cell_width=None,
+    ):
         df_by_quarter = self.get_annual_data_by_period(
             start_year=start_year,
             end_year=end_year,
             is_accumulated=is_accumulated,
-            by_quarter=True
+            by_quarter=True,
         )
 
         df_by_year = self.get_annual_data_by_period(
             start_year=start_year,
             end_year=end_year,
             is_accumulated=is_accumulated,
-            by_quarter=False
+            by_quarter=False,
         )
 
         if not filename:
@@ -331,13 +342,23 @@ class ReportCalculator:
 
         with pd.ExcelWriter(filename, engine="xlsxwriter") as writer:
             df_by_quarter.to_excel(
-                writer, sheet_name="Quarter", index=False, header=True, float_format="#,###"
+                writer,
+                sheet_name="Quarter",
+                index=False,
+                header=True,
+                float_format="#,###",
             )
             df_by_year.to_excel(
-                writer, sheet_name="Year", index=False, header=True, float_format="#,###"
+                writer,
+                sheet_name="Year",
+                index=False,
+                header=True,
+                float_format="#,###",
             )
 
             workbook = writer.book
             float_format = workbook.add_format({"num_format": "#,##0"})
             for worksheet in [writer.sheets["Quarter"], writer.sheets["Year"]]:
-                worksheet.set_column(0, 1000, width=cell_width, cell_format=float_format)
+                worksheet.set_column(
+                    0, 1000, width=cell_width, cell_format=float_format
+                )
