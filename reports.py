@@ -183,10 +183,11 @@ class ReportCalculator:
         if not corp_code and not corp_name:
             raise ValueError("Either corp_name or corp_code should be vaild")
 
+        corp_inst = Corp(api_key=api_key)
         if corp_code:
-            target_corp = Corp.find_by_code(code=corp_code)
+            target_corp = corp_inst.find_by_code(code=corp_code)
         if corp_name:
-            target_corp = Corp.find_by_name(name=corp_name)
+            target_corp = corp_inst.find_by_name(name=corp_name)
 
         if not target_corp:
             raise ValueError("Invalid corp_code")
