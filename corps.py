@@ -7,18 +7,23 @@ from zipfile import ZipFile
 import requests
 from pydash import py_
 
-from auth import API_KEY
+from utils import get_api_key
 from config import BASE_URL
 
+API_KEY = get_api_key()
 
 class Corp:
-    @staticmethod
-    def get_list(api_key=API_KEY):
+    def __init__(self, api_key=API_KEY):
+        if not api_key:
+            raise ValueError('API key is not valid')
+        self.api_key = api_key
+
+    def get_list(self):
         if not (
             "corpCode" in os.listdir(".") and "CORPCODE.xml" in os.listdir("corpCode")
         ):
             target_url = f"{BASE_URL}/corpCode.xml"
-            res = requests.get(target_url, params={"crtfc_key": api_key})
+            res = requests.get(target_url, params={"crtfc_key": self.api_key})
 
             with ZipFile(BytesIO(res.content)) as zipfile:
                 zipfile.extractall("corpCode")
@@ -59,10 +64,9 @@ class Corp:
 
         return corp_list
 
-    @staticmethod
-    def find_by_name(name, corp_list=None):
+    def find_by_name(self, name, corp_list=None):
         if not corp_list:
-            corp_list = Corp.get_list()
+            corp_list = self.get_list()
 
         target_corp = py_.find(corp_list, lambda val: val["corp_name"] == name)
 
@@ -72,10 +76,9 @@ class Corp:
 
         return target_corp
 
-    @staticmethod
-    def find_by_code(code, corp_list=None):
+    def find_by_code(self, code, corp_list=None):
         if not corp_list:
-            corp_list = Corp.get_list()
+            corp_list = self.get_list()
 
         target_corp = py_.find(corp_list, lambda val: val["corp_code"] == code)
         if not target_corp:

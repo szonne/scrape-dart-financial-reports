@@ -2,6 +2,22 @@
 
 OPENDART API를 활용, 사업보고서 데이터 불러오기
 
+### Requirements
+1. OPENDART API key 신청 (1~2일 소요)
+   - https://opendart.fss.or.kr 접속
+   - 인증키 신청/관리 -> 인증키 신청
+2. Google colab
+   - https://colab.research.google.com 접속
+   - '새 노트' 선택
+   - 아래의 코드를 복사, 붙여넣기 한 뒤에 셀의 왼쪽에 있는 재생 버튼 클릭
+     ```sh
+     %%bash
+     git clone https://github.com/szonne/scrape-dart-financial-reports
+     !python scrape-dart-financial-reports/main.py 
+     ``` 
+   - 
+
+
 ### Dev setup (Fresh start)
 1. Install python 3.10
     - https://www.python.org/downloads/ (other)
