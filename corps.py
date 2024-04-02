@@ -60,7 +60,10 @@ class Corp:
         return corp_list
 
     @staticmethod
-    def find_by_name(corp_list, name):
+    def find_by_name(name, corp_list=None):
+        if not corp_list:
+            corp_list = Corp.get_list()
+
         target_corp = py_.find(corp_list, lambda val: val["corp_name"] == name)
 
         if not target_corp:
@@ -70,7 +73,10 @@ class Corp:
         return target_corp
 
     @staticmethod
-    def find_by_code(corp_list, code):
+    def find_by_code(code, corp_list=None):
+        if not corp_list:
+            corp_list = Corp.get_list()
+
         target_corp = py_.find(corp_list, lambda val: val["corp_code"] == code)
         if not target_corp:
             logging.warning(f"There is no corp of which code is {code}")

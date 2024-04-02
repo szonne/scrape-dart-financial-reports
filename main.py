@@ -1,44 +1,29 @@
-import pandas as pd
-
 from config import Units
-from corps import Corp
 from reports import ReportCalculator
 
 if __name__ == "__main__":
-    corp_list = Corp.get_list()
-    target_corp = Corp.find_by_name(corp_list, "원텍")
 
+    corp_name = input('회사 이름을 입력하세요: ')
+    start_year = int(input('시작 연도를 입력하세요: '))
+    end_year = int(input('끝 연도를 입력하세요: '))
+    is_connected_num = input('연결재무제표: 1, 별도재무제표: 2\n 숫자를 입력하세요: ')
+    if is_connected_num not in ('1', '2'):
+        print('적절하지 않은 응답입니다. 별도재무제표 기준으로 데이터를 추출합니다.')
+        is_connected_num = '2'
+
+    is_connected = True if is_connected_num == '1' else False
+    print(f'{corp_name}의 사업보고서 데이터 취합을 준비 중입니다...')
     report_calculator = ReportCalculator(
-        corp_code=target_corp["corp_code"], is_connected=True, unit=Units.MILLION
+        corp_name=corp_name, is_connected=is_connected, unit=Units.THOUSAND
     )
 
-    start_year = 2022
-    end_year = 2023
+    print(f'{corp_name}의 사업보고서 데이터를 처리 중입니다...')
 
-    quarter_df = report_calculator.get_annual_data_by_period(
-        start_year=start_year, end_year=end_year, by_quarter=True, is_accumulated=False
-    )
-    annual_df = report_calculator.get_annual_data_by_period(
-        start_year=start_year, end_year=end_year, by_quarter=False
+    report_calculator.write_data(
+        start_year=start_year,
+        end_year=end_year,
+        is_accumulated=True,
     )
 
-    if report_calculator.unit == Units.DEFAULT:
-        cell_width = 15
-    elif report_calculator.unit == Units.THOUSAND:
-        cell_width = 12
-    else:
-        cell_width = 9
+    print(f'{corp_name}의 사업보고서 데이터 처리가 완료되었습니다.')
 
-    filename = f"{target_corp['corp_name']}_{str(start_year)}_{str(end_year)}_unit_{report_calculator.unit.name.lower()}.xlsx"
-    with pd.ExcelWriter(filename, engine="xlsxwriter") as writer:
-        quarter_df.to_excel(
-            writer, sheet_name="Quarter", index=False, header=True, float_format="#,###"
-        )
-        annual_df.to_excel(
-            writer, sheet_name="Year", index=False, header=True, float_format="#,###"
-        )
-
-        workbook = writer.book
-        float_format = workbook.add_format({"num_format": "#,##0"})
-        for worksheet in [writer.sheets["Quarter"], writer.sheets["Year"]]:
-            worksheet.set_column(0, 1000, width=cell_width, cell_format=float_format)
