@@ -12,9 +12,11 @@ if __name__ == "__main__":
         is_connected_num = "2"
 
     is_connected = True if is_connected_num == "1" else False
+
+    api_key = input("API Key를 입력하세요: ")
     print(f"{corp_name}의 사업보고서 데이터 취합을 준비 중입니다...")
     report_calculator = ReportCalculator(
-        corp_name=corp_name, is_connected=is_connected, unit=Units.THOUSAND
+        corp_name=corp_name, is_connected=is_connected, unit=Units.THOUSAND, api_key=api_key
     )
 
     print(f"{corp_name}의 사업보고서 데이터를 처리 중입니다...")
