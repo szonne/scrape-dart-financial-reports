@@ -223,7 +223,7 @@ class ReportCalculator:
                 year=year,
                 report_code=ReportCodes.Q4,
                 is_connected=self.is_connected,
-                api_key=self.api_key
+                api_key=self.api_key,
             )
 
             annual_df = pd.DataFrame()
@@ -250,7 +250,7 @@ class ReportCalculator:
                 year=year,
                 report_code=report_code,
                 is_connected=self.is_connected,
-                api_key=self.api_key
+                api_key=self.api_key,
             )
 
             quarter_df = pd.DataFrame()
