@@ -5,7 +5,6 @@ from accounts import BalanceSheetAccounts
 from accounts import CashFlowAccounts
 from accounts import IncomeStatementAccounts
 from accounts import get_account_detail
-from utils import get_api_key
 from config import BASE_URL
 from config import AccountDetail
 from config import DartResponse
@@ -13,8 +12,10 @@ from config import ReportCodes
 from config import ReportTypes
 from config import Units
 from corps import Corp
+from utils import get_api_key
 
 API_KEY = get_api_key()
+
 
 class Report:
     def __init__(
@@ -23,11 +24,11 @@ class Report:
         year: int,
         report_code: ReportCodes = ReportCodes.Q4,
         is_connected: bool = False,
-        api_key: str = API_KEY
+        api_key: str = API_KEY,
     ):
 
         if not api_key:
-            raise ValueError('API Key is not valid')
+            raise ValueError("API Key is not valid")
 
         self.corp_code = corp_code
 
@@ -177,7 +178,7 @@ class ReportCalculator:
         corp_code: str = None,
         is_connected: bool = False,
         unit: Units = Units.DEFAULT,
-        api_key: str = API_KEY
+        api_key: str = API_KEY,
     ):
         if not corp_code and not corp_name:
             raise ValueError("Either corp_name or corp_code should be vaild")

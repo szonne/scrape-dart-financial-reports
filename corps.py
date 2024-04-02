@@ -7,15 +7,16 @@ from zipfile import ZipFile
 import requests
 from pydash import py_
 
-from utils import get_api_key
 from config import BASE_URL
+from utils import get_api_key
 
 API_KEY = get_api_key()
+
 
 class Corp:
     def __init__(self, api_key=API_KEY):
         if not api_key:
-            raise ValueError('API key is not valid')
+            raise ValueError("API key is not valid")
         self.api_key = api_key
 
     def get_list(self):
