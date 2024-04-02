@@ -3,7 +3,5 @@ requests
 pandas
 isort
 black
-jupyterlab
-notebook
 openpyxl
 xlsxwriter
