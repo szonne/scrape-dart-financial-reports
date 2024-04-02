@@ -5,7 +5,6 @@ from accounts import BalanceSheetAccounts
 from accounts import CashFlowAccounts
 from accounts import IncomeStatementAccounts
 from accounts import get_account_detail
-from auth import API_KEY
 from config import BASE_URL
 from config import AccountDetail
 from config import DartResponse
@@ -13,6 +12,9 @@ from config import ReportCodes
 from config import ReportTypes
 from config import Units
 from corps import Corp
+from utils import get_api_key
+
+API_KEY = get_api_key()
 
 
 class Report:
@@ -21,11 +23,17 @@ class Report:
         corp_code: str,
         year: int,
         report_code: ReportCodes = ReportCodes.Q4,
-        is_connected=False,
+        is_connected: bool = False,
+        api_key: str = API_KEY,
     ):
+
+        if not api_key:
+            raise ValueError("API Key is not valid")
+
         self.corp_code = corp_code
 
-        target_corp = Corp.find_by_code(corp_code)
+        corp_inst = Corp(api_key=api_key)
+        target_corp = corp_inst.find_by_code(corp_code)
         if not target_corp:
             raise ValueError("Invalid corp_code")
 
@@ -33,7 +41,7 @@ class Report:
         self.year = str(year)
         self.report_code = report_code
         self.is_connected = is_connected
-        self.api_key = API_KEY
+        self.api_key = api_key
         self.raw_df = self.get_raw_df()
 
     def get_data(self) -> DartResponse:
@@ -170,6 +178,7 @@ class ReportCalculator:
         corp_code: str = None,
         is_connected: bool = False,
         unit: Units = Units.DEFAULT,
+        api_key: str = API_KEY,
     ):
         if not corp_code and not corp_name:
             raise ValueError("Either corp_name or corp_code should be vaild")
@@ -186,6 +195,9 @@ class ReportCalculator:
         self.corp_name = target_corp["corp_name"]
         self.is_connected = is_connected
         self.unit = unit
+        self.api_key = None
+        if api_key:
+            self.api_key = api_key
 
     def refine_unit(self, df):
         for col in df.columns:
