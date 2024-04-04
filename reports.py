@@ -42,7 +42,20 @@ class Report:
         self.report_code = report_code
         self.is_connected = is_connected
         self.api_key = api_key
-        self.raw_df = self.get_raw_df()
+
+        raw_df = self.get_raw_df()
+        rcept_no = raw_df['rcept_no'].iloc[0]
+        self.url = "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=" + rcept_no
+        self.raw_df = raw_df.drop(['rcept_no'], axis=1)
+
+    @property
+    def report_params(self):
+        return {
+            "crtfc_key": self.api_key,
+            "corp_code": self.corp_code,
+            "bsns_year": str(self.year),
+            "reprt_code": self.report_code.value,
+        }
 
     def get_data(self) -> DartResponse:
         """
@@ -54,11 +67,8 @@ class Report:
         :return:
         """
         params = {
-            "crtfc_key": self.api_key,
-            "corp_code": self.corp_code,
+            **self.report_params,
             "fs_div": "CFS" if self.is_connected else "OFS",
-            "bsns_year": str(self.year),
-            "reprt_code": self.report_code.value,
         }
 
         res = requests.get(BASE_URL + "/fnlttSinglAcntAll.json", params=params)
@@ -74,6 +84,43 @@ class Report:
 
         return True
 
+    def get_employee_df(self) -> pd.DataFrame:
+        url = "https://opendart.fss.or.kr/api/empSttus.json"
+        res = requests.get(url, params=self.report_params).json()
+
+        if not self.check_data_valid(res):
+            return pd.DataFrame()
+
+        data = []
+        for item in res['list']:
+            team = item['fo_bbm']
+            sex = item['sexdstn']
+
+            reg_employee_cnt = item['rgllbr_co']
+            irreg_employee_cnt = item['cnttk_co']
+
+            reg_employee_cnt = reg_employee_cnt.replace(',', '')
+            irreg_employee_cnt = irreg_employee_cnt.replace(',' , '')
+
+            try:
+                reg_employee_cnt = int(reg_employee_cnt)
+            except ValueError:
+                reg_employee_cnt = 0
+
+            try:
+                irreg_employee_cnt = int(irreg_employee_cnt)
+            except ValueError:
+                irreg_employee_cnt = 0
+
+            for is_regular in [True, False]:
+                data.append({
+                    'sj_nm': '직원 등의 현황',
+                    'account_nm': f'{team}_{sex}({"정규직" if is_regular else "계약직"})',
+                    'amount': reg_employee_cnt if is_regular else irreg_employee_cnt
+                })
+
+        return pd.DataFrame(data)
+
     def get_raw_df(self) -> pd.DataFrame:
         data = self.get_data()
         if not self.check_data_valid(data):
@@ -81,6 +128,7 @@ class Report:
 
         df = pd.DataFrame(data["list"])
         target_columns = [
+            'rcept_no',
             "bsns_year",
             "corp_code",
             "sj_div",
