@@ -1,6 +1,9 @@
+import re
+
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup as bs
+from pydash import py_
 
 from accounts import BalanceSheetAccounts
 from accounts import CashFlowAccounts
@@ -14,8 +17,6 @@ from config import ReportTypes
 from config import Units
 from corps import Corp
 from utils import get_api_key
-from pydash import py_
-import re
 
 API_KEY = get_api_key()
 
@@ -148,26 +149,26 @@ class Report:
         if not matches:
             return None
 
-        candidates = py_.filter(matches, lambda m: '주석' in m[0])
+        candidates = py_.filter(matches, lambda m: "주석" in m[0])
 
         if self.is_connected:
-            target = py_.find(candidates, lambda m: '연결' in m[0])
+            target = py_.find(candidates, lambda m: "연결" in m[0])
 
-        target = py_.find(candidates, lambda m: '연결' not in m[0])
+        target = py_.find(candidates, lambda m: "연결" not in m[0])
 
         if not target:
             return None
 
-        viewer_url = 'http://dart.fss.or.kr/report/viewer.do?'
-        return f'{viewer_url}rcpNo={target[2]}&dcmNo={target[3]}&eleId={target[4]}&offset={target[5]}&length={target[6]}&dtd={target[7]}'
+        viewer_url = "http://dart.fss.or.kr/report/viewer.do?"
+        return f"{viewer_url}rcpNo={target[2]}&dcmNo={target[3]}&eleId={target[4]}&offset={target[5]}&length={target[6]}&dtd={target[7]}"
 
     def get_inventory_detail_df(self, unit: Units = Units.DEFAULT) -> pd.DataFrame:
         res = requests.get(self.get_footnote_url())
-        soup = bs(res.text, 'html.parser')
+        soup = bs(res.text, "html.parser")
 
         target_header = None
-        pair = re.compile(r'\d+\. 재고자산')
-        for tag in soup.find_all('p'):
+        pair = re.compile(r"\d+\. 재고자산")
+        for tag in soup.find_all("p"):
             if pair.match(tag.text):
                 target_header = tag
                 break
@@ -176,60 +177,66 @@ class Report:
             return pd.DataFrame()
 
         unit_table = target_header.find_next_sibling()
-        unit_match = re.search(r'단위 : (.+)\)', unit_table.text.strip())
+        unit_match = re.search(r"단위 : (.+)\)", unit_table.text.strip())
 
         if not unit_match:
             return pd.DataFrame()
 
-        inventory_unit = unit_match.group(1).replace(' ', '')
+        inventory_unit = unit_match.group(1).replace(" ", "")
 
-        if inventory_unit == '원':
+        if inventory_unit == "원":
             unit_num = 1
-        elif inventory_unit == '천원':
+        elif inventory_unit == "천원":
             unit_num = 1000
-        elif inventory_unit == '백만원':
+        elif inventory_unit == "백만원":
             unit_num = 1000 * 1000
         else:
-            raise ValueError(f'Invalid unit in inventory detail in {self.corp_name} {self.report_code}')
+            raise ValueError(
+                f"Invalid unit in inventory detail in {self.corp_name} {self.report_code}"
+            )
 
         # 단위 조정
         multiplied_by = unit_num / unit.value
 
         content_table = unit_table.find_next_sibling()
 
-        theads = content_table.find('thead').find_all('th')
+        theads = content_table.find("thead").find_all("th")
         col_index = 0
         for th_idx, th in enumerate(theads):
-            if th.get('colspan'):
-                col_index += int(th.get('colspan'))
+            if th.get("colspan"):
+                col_index += int(th.get("colspan"))
             else:
                 if th_idx != 0:
                     col_index += 1
 
-            if py_.some(['당기', '당반기', '당분기'], lambda keyword: keyword in th.text.strip()):
+            if py_.some(
+                ["당기", "당반기", "당분기"], lambda keyword: keyword in th.text.strip()
+            ):
                 break
 
         # Extract data rows
         data = []
-        for row in content_table.find('tbody').find_all('tr'):
-            account_nm = row.find_all('td')[0].text.strip().replace('\xa0', '').replace(' ', '')
-            account_nm = re.sub(r'\[\s]', "", account_nm)
-            amount = row.find_all('td')[col_index].text.strip().replace(',', '')
-
+        for row in content_table.find("tbody").find_all("tr"):
+            account_nm = (
+                row.find_all("td")[0].text.strip().replace("\xa0", "").replace(" ", "")
+            )
+            account_nm = re.sub(r"\[\s]", "", account_nm)
+            amount = row.find_all("td")[col_index].text.strip().replace(",", "")
 
             try:
                 # negative value
-                if re.match(r'\(\d+\)', amount):
+                if re.match(r"\(\d+\)", amount):
                     amount = eval(amount) * -1
                 else:
                     amount = eval(amount)
             except SyntaxError:
                 amount = 0
 
-            data.append({'account_nm': account_nm, 'amount': int(amount * multiplied_by)})
+            data.append(
+                {"account_nm": account_nm, "amount": int(amount * multiplied_by)}
+            )
 
         return pd.DataFrame(data)
-
 
     def get_raw_df(self) -> pd.DataFrame:
         data = self.get_data()
