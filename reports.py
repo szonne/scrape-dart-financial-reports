@@ -162,33 +162,49 @@ class Report:
         viewer_url = "http://dart.fss.or.kr/report/viewer.do?"
         return f"{viewer_url}rcpNo={target[2]}&dcmNo={target[3]}&eleId={target[4]}&offset={target[5]}&length={target[6]}&dtd={target[7]}"
 
-    def get_inventory_detail_df(self, unit: Units = Units.DEFAULT) -> pd.DataFrame:
+    def get_footnote_detail_df(self, detail_data_type, unit: Units = Units.DEFAULT) -> pd.DataFrame:
         res = requests.get(self.get_footnote_url())
-        soup = bs(res.text, "html.parser")
+        soup = bs(res.text, 'html.parser')
 
         target_header = None
-        pair = re.compile(r"\d+\. 재고자산")
+        if detail_data_type == 'expense':
+            pair = re.compile(r"\d+\. 비용")
+            sj_div = 'expense_detail'
+            sj_nm = '비용의 성격별 분류'
+        elif detail_data_type == 'inventory':
+            pair = re.compile(r"\d+\. 재고자산")
+            sj_div = 'inventory_detail'
+            sj_nm = '재고자산 내역'
+        else:
+            raise ValueError('Not proper detail_data_type')
+
         for tag in soup.find_all("p"):
             if pair.match(tag.text):
                 target_header = tag
                 break
-
         if not target_header:
             return pd.DataFrame()
 
-        unit_table = target_header.find_next_sibling()
+        unit_table = None
+        for tag in target_header.find_next_siblings():
+            if tag.name == 'table':
+                unit_table = tag
+                break
+
+        if not unit_table:
+            return pd.DataFrame()
+
         unit_match = re.search(r"단위 : (.+)\)", unit_table.text.strip())
 
         if not unit_match:
             return pd.DataFrame()
 
-        inventory_unit = unit_match.group(1).replace(" ", "")
-
-        if inventory_unit == "원":
+        table_unit = unit_match.group(1).replace(" ", "")
+        if table_unit == "원":
             unit_num = 1
-        elif inventory_unit == "천원":
+        elif table_unit == "천원":
             unit_num = 1000
-        elif inventory_unit == "백만원":
+        elif table_unit == "백만원":
             unit_num = 1000 * 1000
         else:
             raise ValueError(
@@ -198,21 +214,22 @@ class Report:
         # 단위 조정
         multiplied_by = unit_num / unit.value
 
-        content_table = unit_table.find_next_sibling()
+        content_table = None
+        for tag in unit_table.find_next_siblings():
+            if tag.name == 'table':
+                content_table = tag
+                break
+
+        if not content_table:
+            return pd.DataFrame()
 
         theads = content_table.find("thead").find_all("th")
-        col_index = 0
-        for th_idx, th in enumerate(theads):
-            if th.get("colspan"):
-                col_index += int(th.get("colspan"))
-            else:
-                if th_idx != 0:
-                    col_index += 1
 
-            if py_.some(
-                ["당기", "당반기", "당분기"], lambda keyword: keyword in th.text.strip()
-            ):
-                break
+        # Nested column
+        if py_.some(theads, lambda th: th.get('colspan')):
+            col_index = int(py_.find(theads, lambda th: th.get('colspan')).get('colspan'))
+        else:
+            col_index = len(theads) - 1
 
         # Extract data rows
         data = []
@@ -224,16 +241,16 @@ class Report:
             amount = row.find_all("td")[col_index].text.strip().replace(",", "")
 
             try:
+                amount = eval(amount)
                 # negative value
                 if re.match(r"\(\d+\)", amount):
-                    amount = eval(amount) * -1
-                else:
-                    amount = eval(amount)
+                    amount *= -1
+
             except SyntaxError:
                 amount = 0
 
             data.append(
-                {"account_nm": account_nm, "amount": int(amount * multiplied_by)}
+                {"sj_div": sj_div, "sj_nm": sj_nm, "account_nm": account_nm, "amount": int(amount * multiplied_by)}
             )
 
         return pd.DataFrame(data)
