@@ -127,6 +127,7 @@ class ReportCalculator:
             if has_quarter_data:
                 amount_cols.append(amount_col_name)
 
+            # 분기별 재무제표 주석 (비용의 성격별 분류, 재고자산 내역, 임직원 현황) 취합
             for footnote_data_sj_div in FootnoteDataSjDivs:
                 if footnote_data_sj_div.name not in dfs_by_sj_div:
                     dfs_by_sj_div[footnote_data_sj_div.name] = []
