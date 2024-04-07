@@ -12,9 +12,9 @@ from accounts import get_account_detail
 from config import BASE_URL
 from config import AccountDetail
 from config import DartResponse
+from config import FootnoteDataSjDivs
 from config import ReportCodes
 from config import ReportTypes
-from config import FootnoteDataSjDivs
 from config import Units
 from corps import Corp
 from utils import get_api_key

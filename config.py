@@ -26,14 +26,14 @@ class Units(Enum):
 
 
 class FootnoteDataTypes(Enum):
-    EXPENSE = 'expense'
-    INVENTORY = 'inventory'
+    EXPENSE = "expense"
+    INVENTORY = "inventory"
 
 
 class FootnoteDataSjDivs(Enum):
-    EMPLOYEE_STATUS = 'Employee status'
-    EXPENSE = 'Expense detail'
-    INVENTORY = 'Inventory detail'
+    EMPLOYEE_STATUS = "Employee status"
+    EXPENSE = "Expense detail"
+    INVENTORY = "Inventory detail"
 
 
 class AccountDetail(TypedDict):

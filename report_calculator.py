@@ -1,7 +1,8 @@
 import pandas as pd
+
+from config import FootnoteDataSjDivs
 from config import ReportCodes
 from config import ReportTypes
-from config import FootnoteDataSjDivs
 from config import Units
 from corps import Corp
 from reports import Report
@@ -41,7 +42,7 @@ class ReportCalculator:
 
     @staticmethod
     def reset_index_df(df: pd.DataFrame) -> pd.DataFrame:
-        return df.reset_index().drop(['index'], axis=1)
+        return df.reset_index().drop(["index"], axis=1)
 
     def refine_unit(self, df):
         for col in df.columns:
@@ -79,9 +80,13 @@ class ReportCalculator:
                 if footnote_data_sj_div == FootnoteDataSjDivs.EMPLOYEE_STATUS:
                     footnote_detail_df = report.get_employee_df()
                 else:
-                    footnote_detail_df = report.get_footnote_detail_df(footnote_data_sj_div=footnote_data_sj_div, unit=self.unit)
+                    footnote_detail_df = report.get_footnote_detail_df(
+                        footnote_data_sj_div=footnote_data_sj_div, unit=self.unit
+                    )
 
-                annual_df = self.reset_index_df(pd.concat([annual_df, footnote_detail_df]))
+                annual_df = self.reset_index_df(
+                    pd.concat([annual_df, footnote_detail_df])
+                )
 
             if annual_df.empty:
                 return pd.DataFrame()
@@ -111,7 +116,9 @@ class ReportCalculator:
 
                 if report_type.name not in dfs_by_sj_div:
                     dfs_by_sj_div[report_type.name] = []
-                dfs_by_sj_div[report_type.name].append({'col_name': amount_col_name, 'df': target_df})
+                dfs_by_sj_div[report_type.name].append(
+                    {"col_name": amount_col_name, "df": target_df}
+                )
 
                 if report_type_idx == 0 and not target_df.empty:
                     has_quarter_data = True
@@ -127,9 +134,13 @@ class ReportCalculator:
                 if footnote_data_sj_div == FootnoteDataSjDivs.EMPLOYEE_STATUS:
                     df = report.get_employee_df()
                 else:
-                    df = report.get_footnote_detail_df(footnote_data_sj_div=footnote_data_sj_div, unit=self.unit)
+                    df = report.get_footnote_detail_df(
+                        footnote_data_sj_div=footnote_data_sj_div, unit=self.unit
+                    )
 
-                dfs_by_sj_div[footnote_data_sj_div.name].append({'col_name': amount_col_name, 'df': df})
+                dfs_by_sj_div[footnote_data_sj_div.name].append(
+                    {"col_name": amount_col_name, "df": df}
+                )
 
         annual_df = pd.DataFrame()
 
@@ -138,11 +149,17 @@ class ReportCalculator:
             sj_div_df = pd.DataFrame()
 
             for item in dfs_by_sj_div[sj_div]:
-                df = item['df'].rename(columns={'amount': item['col_name']})
+                df = item["df"].rename(columns={"amount": item["col_name"]})
                 if sj_div_df.empty:
                     sj_div_df = df
                 else:
-                    sj_div_df = pd.merge(left=sj_div_df, right=df, left_on=['sj_div', 'sj_nm', 'account_nm'], right_on=['sj_div', 'sj_nm', 'account_nm'], how='outer')
+                    sj_div_df = pd.merge(
+                        left=sj_div_df,
+                        right=df,
+                        left_on=["sj_div", "sj_nm", "account_nm"],
+                        right_on=["sj_div", "sj_nm", "account_nm"],
+                        how="outer",
+                    )
                     sj_div_df.fillna(0, inplace=True)
 
             for col in sj_div_df.columns:
@@ -161,7 +178,7 @@ class ReportCalculator:
         sj_divs = annual_df.sj_div.unique().tolist()
         # 손익계산서, 현금흐름표, 비용의 성격별 분류 -> 누적값에 대한 계산 필요
         # 재무상태표, 재고자산 현황, 임직원 현황 -> 값 그대로 사용
-        sj_divs_need_calculation = ['CIS', 'CF', FootnoteDataSjDivs.EXPENSE.name]
+        sj_divs_need_calculation = ["CIS", "CF", FootnoteDataSjDivs.EXPENSE.name]
 
         # 계산의 편의를 위해 컬럼 역전. 기존에는 1분기 -> 4분기였다면, 4분기 -> 1분기 순으로 나열
         reversed_cols = list(reversed(amount_cols))
