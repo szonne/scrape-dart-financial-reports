@@ -4,6 +4,8 @@
 #
 #    pip-compile
 #
+beautifulsoup4==4.12.3
+    # via -r requirements.in
 black==24.3.0
     # via -r requirements.in
 certifi==2024.2.2
@@ -42,6 +44,8 @@ requests==2.31.0
     # via -r requirements.in
 six==1.16.0
     # via python-dateutil
+soupsieve==2.5
+    # via beautifulsoup4
 tomli==2.0.1
     # via black
 typing-extensions==4.10.0
