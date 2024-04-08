@@ -17,7 +17,9 @@ from config import ReportCodes
 from config import ReportTypes
 from config import Units
 from corps import Corp
-from utils import get_api_key, get_age, remove_escape_characters
+from utils import get_age
+from utils import get_api_key
+from utils import remove_escape_characters
 
 API_KEY = get_api_key()
 
@@ -143,16 +145,18 @@ class Report:
             return pd.DataFrame()
 
         data = []
-        for item in res['list']:
-            birth_year, birth_month = re.findall('r\d+', item['birth_ym'])
+        for item in res["list"]:
+            birth_year, birth_month = re.findall("r\d+", item["birth_ym"])
             age = get_age(birth_year=int(birth_year), birth_month=int(birth_month))
 
-            data.append({
-                'name': item['nm'],
-                'age': age,
-                # 직위
-                'ofcps': remove_escape_characters(item['ofcps']).replace(' ', '')
-            })
+            data.append(
+                {
+                    "name": item["nm"],
+                    "age": age,
+                    # 직위
+                    "ofcps": remove_escape_characters(item["ofcps"]).replace(" ", ""),
+                }
+            )
         return pd.DataFrame(data)
 
     def get_unregistered_executives_df(self) -> pd.DataFrame:
@@ -174,7 +178,7 @@ class Report:
         if not matches:
             return pd.DataFrame()
 
-        target = py_.find(matches, lambda m: '임원 및 직원의 현황' in m[0])
+        target = py_.find(matches, lambda m: "임원 및 직원의 현황" in m[0])
         if not target:
             return pd.DataFrame()
 
@@ -182,7 +186,7 @@ class Report:
         target_url = f"{viewer_url}rcpNo={target[2]}&dcmNo={target[3]}&eleId={target[4]}&offset={target[5]}&length={target[6]}&dtd={target[7]}"
 
         res = requests.get(target_url)
-        soup = bs(res.text, 'html.parser')
+        soup = bs(res.text, "html.parser")
 
         target_header = None
         reg_pattern = r"(.+)\. 미등기임원$"
@@ -195,20 +199,18 @@ class Report:
         if not target_header:
             return pd.DataFrame()
 
-        target_table = py_.filter(target_header.find_next_siblings(), lambda ele: ele and ele.name == 'table')[1]
+        target_table = py_.filter(
+            target_header.find_next_siblings(), lambda ele: ele and ele.name == "table"
+        )[1]
         data = []
 
-        for row in target_table.find('tbody').find_all('tr'):
-            tds = row.find_all('td')
-            birth_year, birth_month = re.findall('r\d+', tds[2]['birth_ym'])
+        for row in target_table.find("tbody").find_all("tr"):
+            tds = row.find_all("td")
+            birth_year, birth_month = re.findall("r\d+", tds[2]["birth_ym"])
             age = get_age(birth_year=int(birth_year), birth_month=int(birth_month))
-            ofcps = remove_escape_characters(tds[3].text.strip()).replace(' ', '')
+            ofcps = remove_escape_characters(tds[3].text.strip()).replace(" ", "")
 
-            data.append({
-                'name': tds[0].text.strip(),
-                'age': age,
-                'ofcps': ofcps
-            })
+            data.append({"name": tds[0].text.strip(), "age": age, "ofcps": ofcps})
         return pd.DataFrame(data)
 
     def get_executives_df(self):
@@ -218,11 +220,12 @@ class Report:
         if not unregistered_.empty:
             merged_ = pd.concat([merged_, unregistered_])
 
-        custom_order = {'회장': 1, '부회장': 2, '대표이사': 3, '사장': 4, '부사장': 5}
-        merged_['sort_order'] = merged_['ofcps'].apply(lambda val: 6 if val not in custom_order else custom_order[val])
+        custom_order = {"회장": 1, "부회장": 2, "대표이사": 3, "사장": 4, "부사장": 5}
+        merged_["sort_order"] = merged_["ofcps"].apply(
+            lambda val: 6 if val not in custom_order else custom_order[val]
+        )
 
-        return merged_.sort_values(['sort_order']).drop('sort_order')
-
+        return merged_.sort_values(["sort_order"]).drop("sort_order")
 
     def get_footnote_url(self):
         res = requests.get(self.url)
@@ -337,7 +340,7 @@ class Report:
         # Extract data rows
         data = []
         for row in content_table.find("tbody").find_all("tr"):
-            account_nm = remove_escape_characters(row.find_all('td')[0].text.strip())
+            account_nm = remove_escape_characters(row.find_all("td")[0].text.strip())
             amount = row.find_all("td")[col_index].text.strip().replace(",", "")
 
             try:

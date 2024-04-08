@@ -84,9 +84,7 @@ class ReportCalculator:
                         detail_data_sj_div=detail_data_sj_div, unit=self.unit
                     )
 
-                annual_df = self.reset_index_df(
-                    pd.concat([annual_df, detail_data_df])
-                )
+                annual_df = self.reset_index_df(pd.concat([annual_df, detail_data_df]))
 
             if annual_df.empty:
                 return pd.DataFrame()
