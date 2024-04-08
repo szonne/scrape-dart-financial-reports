@@ -1,6 +1,6 @@
 import pandas as pd
 
-from config import FootnoteDataSjDivs
+from config import DetailDataSjDivs
 from config import ReportCodes
 from config import ReportTypes
 from config import Units
@@ -76,16 +76,16 @@ class ReportCalculator:
                 target_df = self.refine_unit(target_df)
                 annual_df = self.reset_index_df(pd.concat([annual_df, target_df]))
 
-            for footnote_data_sj_div in FootnoteDataSjDivs:
-                if footnote_data_sj_div == FootnoteDataSjDivs.EMPLOYEE_STATUS:
-                    footnote_detail_df = report.get_employee_df()
+            for detail_data_sj_div in DetailDataSjDivs:
+                if detail_data_sj_div == DetailDataSjDivs.EMPLOYEE_STATUS:
+                    detail_data_df = report.get_employee_df()
                 else:
-                    footnote_detail_df = report.get_footnote_detail_df(
-                        footnote_data_sj_div=footnote_data_sj_div, unit=self.unit
+                    detail_data_df = report.get_detail_data_df(
+                        detail_data_sj_div=detail_data_sj_div, unit=self.unit
                     )
 
                 annual_df = self.reset_index_df(
-                    pd.concat([annual_df, footnote_detail_df])
+                    pd.concat([annual_df, detail_data_df])
                 )
 
             if annual_df.empty:
@@ -128,18 +128,18 @@ class ReportCalculator:
                 amount_cols.append(amount_col_name)
 
             # 분기별 재무제표 주석 (비용의 성격별 분류, 재고자산 내역, 임직원 현황) 취합
-            for footnote_data_sj_div in FootnoteDataSjDivs:
-                if footnote_data_sj_div.name not in dfs_by_sj_div:
-                    dfs_by_sj_div[footnote_data_sj_div.name] = []
+            for detail_data_sj_div in DetailDataSjDivs:
+                if detail_data_sj_div.name not in dfs_by_sj_div:
+                    dfs_by_sj_div[detail_data_sj_div.name] = []
 
-                if footnote_data_sj_div == FootnoteDataSjDivs.EMPLOYEE_STATUS:
+                if detail_data_sj_div == DetailDataSjDivs.EMPLOYEE_STATUS:
                     df = report.get_employee_df()
                 else:
-                    df = report.get_footnote_detail_df(
-                        footnote_data_sj_div=footnote_data_sj_div, unit=self.unit
+                    df = report.get_detail_data_df(
+                        detail_data_sj_div=detail_data_sj_div, unit=self.unit
                     )
 
-                dfs_by_sj_div[footnote_data_sj_div.name].append(
+                dfs_by_sj_div[detail_data_sj_div.name].append(
                     {"col_name": amount_col_name, "df": df}
                 )
 
@@ -179,7 +179,7 @@ class ReportCalculator:
         sj_divs = annual_df.sj_div.unique().tolist()
         # 손익계산서, 현금흐름표, 비용의 성격별 분류 -> 누적값에 대한 계산 필요
         # 재무상태표, 재고자산 현황, 임직원 현황 -> 값 그대로 사용
-        sj_divs_need_calculation = ["CIS", "CF", FootnoteDataSjDivs.EXPENSE.name]
+        sj_divs_need_calculation = ["CIS", "CF", DetailDataSjDivs.EXPENSE.name]
 
         # 계산의 편의를 위해 컬럼 역전. 기존에는 1분기 -> 4분기였다면, 4분기 -> 1분기 순으로 나열
         reversed_cols = list(reversed(amount_cols))
