@@ -26,12 +26,12 @@ API_KEY = get_api_key()
 
 class Report:
     def __init__(
-            self,
-            corp_code: str,
-            year: int,
-            report_code: ReportCodes = ReportCodes.Q4,
-            is_connected: bool = False,
-            api_key: str = API_KEY,
+        self,
+        corp_code: str,
+        year: int,
+        report_code: ReportCodes = ReportCodes.Q4,
+        is_connected: bool = False,
+        api_key: str = API_KEY,
     ):
 
         if not api_key:
@@ -227,7 +227,7 @@ class Report:
 
     # 최대 주주 주식 보유 현황
     def get_shareholders_df(self) -> pd.DataFrame:
-        url = 'https://opendart.fss.or.kr/api/hyslrSttus.json'
+        url = "https://opendart.fss.or.kr/api/hyslrSttus.json"
         res = requests.get(url, params=self.report_params).json()
 
         if not self.check_data_valid(res):
@@ -235,33 +235,41 @@ class Report:
 
         data = []
         for item in res["list"]:
-            stock_knd = item['stock_knd']
+            stock_knd = item["stock_knd"]
 
-            if stock_knd == '우선주':
+            if stock_knd == "우선주":
                 continue
 
-            name = item['nm']
-            stock_ratio = item['trmend_posesn_stock_qota_rt']
+            name = item["nm"]
+            stock_ratio = item["trmend_posesn_stock_qota_rt"]
 
-            data.append(
-                {
-                    'name': name,
-                    'stock_ratio': stock_ratio
-                }
-            )
+            data.append({"name": name, "stock_ratio": stock_ratio})
         return pd.DataFrame(data)
 
     def get_main_shareholders_df(self) -> pd.DataFrame:
         shareholders_df = self.get_shareholders_df()
         executives_df = self.get_executives_df()
 
-        merged = pd.merge(shareholders_df, executives_df, left_on=['name'], right_on=['name'], how='left').dropna()
-        merged['sj_div'] = DetailDataSjDivs.SHAREHOLDERS.name
-        merged['sj_nm'] = '최대주주 주식소유 현황'
-        merged['name'] = merged['account_nm'] + '(' + merged['ofcps'] + ',' + merged['note'].apply(lambda val: str(int(val))) + ')'
-        merged.rename(columns={'stock_ratio': 'amount'}, inplace=True)
+        merged = pd.merge(
+            shareholders_df,
+            executives_df,
+            left_on=["name"],
+            right_on=["name"],
+            how="left",
+        ).dropna()
+        merged["sj_div"] = DetailDataSjDivs.SHAREHOLDERS.name
+        merged["sj_nm"] = "최대주주 주식소유 현황"
+        merged["name"] = (
+            merged["account_nm"]
+            + "("
+            + merged["ofcps"]
+            + ","
+            + merged["note"].apply(lambda val: str(int(val)))
+            + ")"
+        )
+        merged.rename(columns={"stock_ratio": "amount"}, inplace=True)
 
-        return merged[['sj_div', 'sj_nm', 'account_nm', 'amount']]
+        return merged[["sj_div", "sj_nm", "account_nm", "amount"]]
 
     def get_footnote_url(self):
         res = requests.get(self.url)
@@ -297,7 +305,7 @@ class Report:
         return f"{viewer_url}rcpNo={target[2]}&dcmNo={target[3]}&eleId={target[4]}&offset={target[5]}&length={target[6]}&dtd={target[7]}"
 
     def get_detail_data_df(
-            self, detail_data_sj_div: DetailDataSjDivs, unit: Units = Units.DEFAULT
+        self, detail_data_sj_div: DetailDataSjDivs, unit: Units = Units.DEFAULT
     ) -> pd.DataFrame:
         footnote_url = self.get_footnote_url()
 
@@ -425,7 +433,7 @@ class Report:
 
     @staticmethod
     def get_account_amount(
-            report_df: pd.DataFrame, account_detail: AccountDetail
+        report_df: pd.DataFrame, account_detail: AccountDetail
     ) -> int:
         filtered = pd.DataFrame()
 
@@ -446,7 +454,7 @@ class Report:
                         lambda val: val.replace(" ", "") == stripped_name
                     )
                 )
-                ]
+            ]
             filtered = pd.concat([filtered, target_df])
 
         # 표준계정코드 미사용의 경우 계정과목명으로 비교
