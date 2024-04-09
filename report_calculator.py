@@ -282,11 +282,11 @@ class ReportCalculator:
         # Formatting cell width in excel file
         if not cell_width:
             if self.unit == Units.DEFAULT:
-                cell_width = 15
+                cell_width = 16
             elif self.unit == Units.THOUSAND:
                 cell_width = 12
             else:
-                cell_width = 9
+                cell_width = 8
 
         with pd.ExcelWriter(filename, engine="xlsxwriter") as writer:
             df_by_quarter.to_excel(
@@ -294,14 +294,12 @@ class ReportCalculator:
                 sheet_name="Quarter",
                 index=False,
                 header=True,
-                float_format="#,###",
             )
             df_by_year.to_excel(
                 writer,
                 sheet_name="Year",
                 index=False,
                 header=True,
-                float_format="#,###",
             )
 
             workbook = writer.book
