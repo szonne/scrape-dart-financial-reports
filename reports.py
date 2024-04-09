@@ -99,7 +99,7 @@ class Report:
             return pd.DataFrame()
 
         # 직원 현황 제공 안하는 경우
-        if len(res['list']) == 1 and res['list'][0]['sm'] == '-':
+        if len(res["list"]) == 1 and res["list"][0]["sm"] == "-":
             return pd.DataFrame()
 
         data = []
@@ -194,7 +194,7 @@ class Report:
         reg_pattern = r"(.+)\. 미등기임원"
 
         for tag in soup.find_all("p"):
-            if re.match(reg_pattern, tag.text) and '보수' not in tag.text:
+            if re.match(reg_pattern, tag.text) and "보수" not in tag.text:
                 # "미등기임원의 보수"
                 target_header = tag
                 break
@@ -273,7 +273,9 @@ class Report:
             + merged["age"].apply(lambda val: str(int(val)))
             + ")"
         )
-        merged.rename(columns={"stock_ratio": "amount", "name": "account_nm"}, inplace=True)
+        merged.rename(
+            columns={"stock_ratio": "amount", "name": "account_nm"}, inplace=True
+        )
 
         return merged[["sj_div", "sj_nm", "account_nm", "amount"]]
 

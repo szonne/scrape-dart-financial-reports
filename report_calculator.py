@@ -1,4 +1,5 @@
 import pandas as pd
+from pydash import py_
 
 from config import DetailDataSjDivs
 from config import ReportCodes
@@ -7,7 +8,6 @@ from config import Units
 from corps import Corp
 from reports import Report
 from utils import get_api_key
-from pydash import py_
 
 API_KEY = get_api_key()
 
@@ -163,13 +163,15 @@ class ReportCalculator:
             sj_div_df = pd.DataFrame()
 
             for item in dfs_by_sj_div[sj_div]:
-                df = item['df']
-                col_name = item['col_name']
+                df = item["df"]
+                col_name = item["col_name"]
 
                 if df.empty:
-                    df = pd.DataFrame([], columns=['sj_div', 'sj_nm', 'account_nm', col_name])
+                    df = pd.DataFrame(
+                        [], columns=["sj_div", "sj_nm", "account_nm", col_name]
+                    )
                 else:
-                    df.rename(columns={'amount': col_name}, inplace=True)
+                    df.rename(columns={"amount": col_name}, inplace=True)
 
                 if sj_div_df.empty:
                     sj_div_df = df.copy()
@@ -242,7 +244,7 @@ class ReportCalculator:
                     annual_data,
                     left_on=join_on_columns,
                     right_on=join_on_columns,
-                    how='outer'
+                    how="outer",
                 )
 
             print(f"{str(year)}년도 데이터 처리 완료\n")
