@@ -98,7 +98,12 @@ class Report:
         if not self.check_data_valid(res):
             return pd.DataFrame()
 
+        # 직원 현황 제공 안하는 경우
+        if len(res['list']) == 1 and res['list'][0]['sm'] == '-':
+            return pd.DataFrame()
+
         data = []
+
         for item in res["list"]:
             team = item["fo_bbm"]
             sex = item["sexdstn"]
@@ -189,7 +194,8 @@ class Report:
         reg_pattern = r"(.+)\. 미등기임원"
 
         for tag in soup.find_all("p"):
-            if re.match(reg_pattern, tag.text):
+            if re.match(reg_pattern, tag.text) and '보수' not in tag.text:
+                # "미등기임원의 보수"
                 target_header = tag
                 break
 
@@ -260,14 +266,14 @@ class Report:
         merged["sj_div"] = DetailDataSjDivs.SHAREHOLDERS.name
         merged["sj_nm"] = "최대주주 주식소유 현황"
         merged["name"] = (
-            merged["account_nm"]
+            merged["name"]
             + "("
             + merged["ofcps"]
             + ","
-            + merged["note"].apply(lambda val: str(int(val)))
+            + merged["age"].apply(lambda val: str(int(val)))
             + ")"
         )
-        merged.rename(columns={"stock_ratio": "amount"}, inplace=True)
+        merged.rename(columns={"stock_ratio": "amount", "name": "account_nm"}, inplace=True)
 
         return merged[["sj_div", "sj_nm", "account_nm", "amount"]]
 
@@ -335,7 +341,7 @@ class Report:
 
         unit_table = None
         for tag in target_header.find_next_siblings():
-            if tag.name == "table":
+            if tag.name == "table" and tag.text.strip():
                 unit_table = tag
                 break
 
@@ -364,7 +370,7 @@ class Report:
 
         content_table = None
         for tag in unit_table.find_next_siblings():
-            if tag.name == "table":
+            if tag.name == "table" and tag.text.strip():
                 content_table = tag
                 break
 
