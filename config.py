@@ -25,15 +25,11 @@ class Units(Enum):
     MILLION = 1000 * 1000
 
 
-class FootnoteDataTypes(Enum):
-    EXPENSE = "expense"
-    INVENTORY = "inventory"
-
-
-class FootnoteDataSjDivs(Enum):
-    EMPLOYEE_STATUS = "Employee status"
+class DetailDataSjDivs(Enum):
     EXPENSE = "Expense detail"
     INVENTORY = "Inventory detail"
+    EMPLOYEE_STATUS = "Employee status"
+    SHAREHOLDERS = "Shareholders detail"
 
 
 class AccountDetail(TypedDict):

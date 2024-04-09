@@ -12,12 +12,14 @@ from accounts import get_account_detail
 from config import BASE_URL
 from config import AccountDetail
 from config import DartResponse
-from config import FootnoteDataSjDivs
+from config import DetailDataSjDivs
 from config import ReportCodes
 from config import ReportTypes
 from config import Units
 from corps import Corp
+from utils import get_age
 from utils import get_api_key
+from utils import remove_escape_characters
 
 API_KEY = get_api_key()
 
@@ -96,7 +98,12 @@ class Report:
         if not self.check_data_valid(res):
             return pd.DataFrame()
 
+        # 직원 현황 제공 안하는 경우
+        if len(res["list"]) == 1 and res["list"][0]["sm"] == "-":
+            return pd.DataFrame()
+
         data = []
+
         for item in res["list"]:
             team = item["fo_bbm"]
             sex = item["sexdstn"]
@@ -120,7 +127,7 @@ class Report:
             for is_regular in [True, False]:
                 data.append(
                     {
-                        "sj_div": FootnoteDataSjDivs.EMPLOYEE_STATUS.name,
+                        "sj_div": DetailDataSjDivs.EMPLOYEE_STATUS.name,
                         "sj_nm": "직원 등의 현황",
                         "account_nm": f'{team}_{sex}({"정규직" if is_regular else "계약직"})',
                         "amount": (
@@ -130,6 +137,147 @@ class Report:
                 )
 
         return pd.DataFrame(data)
+
+    def get_registered_executives_df(self) -> pd.DataFrame:
+        # 등기 임원 현황 (via API)
+        url = "https://opendart.fss.or.kr/api/exctvSttus.json"
+        res = requests.get(url, params=self.report_params).json()
+
+        if not self.check_data_valid(res):
+            return pd.DataFrame()
+
+        data = []
+        for item in res["list"]:
+            birth_year, birth_month = re.findall(r"\d+", item["birth_ym"])
+            age = get_age(birth_year=int(birth_year), birth_month=int(birth_month))
+
+            data.append(
+                {
+                    "name": item["nm"],
+                    "age": age,
+                    # 직위
+                    "ofcps": remove_escape_characters(item["ofcps"]).replace(" ", ""),
+                }
+            )
+        return pd.DataFrame(data)
+
+    def get_unregistered_executives_df(self) -> pd.DataFrame:
+        res = requests.get(self.url)
+
+        reg = (
+            "\s+node[12]\['text'\][ =]+\"(.*?)\"\;"
+            "\s+node[12]\['id'\][ =]+\"(\d+)\";"
+            "\s+node[12]\['rcpNo'\][ =]+\"(\d+)\";"
+            "\s+node[12]\['dcmNo'\][ =]+\"(\d+)\";"
+            "\s+node[12]\['eleId'\][ =]+\"(\d+)\";"
+            "\s+node[12]\['offset'\][ =]+\"(\d+)\";"
+            "\s+node[12]\['length'\][ =]+\"(\d+)\";"
+            "\s+node[12]\['dtd'\][ =]+\"(.*?)\";"
+            "\s+node[12]\['tocNo'\][ =]+\"(\d+)\";"
+        )
+
+        matches = re.findall(reg, res.text)
+        if not matches:
+            return pd.DataFrame()
+
+        target = py_.find(matches, lambda m: "임원 및 직원 등의 현황" in m[0])
+        if not target:
+            return pd.DataFrame()
+
+        viewer_url = "http://dart.fss.or.kr/report/viewer.do?"
+        target_url = f"{viewer_url}rcpNo={target[2]}&dcmNo={target[3]}&eleId={target[4]}&offset={target[5]}&length={target[6]}&dtd={target[7]}"
+
+        res = requests.get(target_url)
+        soup = bs(res.text, "html.parser")
+
+        target_header = None
+        reg_pattern = r"(.+)\. 미등기임원"
+
+        for tag in soup.find_all("p"):
+            if re.match(reg_pattern, tag.text) and "보수" not in tag.text:
+                # "미등기임원의 보수"
+                target_header = tag
+                break
+
+        if not target_header:
+            return pd.DataFrame()
+
+        target_table = py_.filter(
+            target_header.find_next_siblings(), lambda ele: ele and ele.name == "table"
+        )[1]
+        data = []
+
+        for row in target_table.find("tbody").find_all("tr"):
+            tds = row.find_all("td")
+            birth_year, birth_month = re.findall(r"\d+", tds[2].text)
+            age = get_age(birth_year=int(birth_year), birth_month=int(birth_month))
+            ofcps = remove_escape_characters(tds[3].text.strip()).replace(" ", "")
+
+            data.append({"name": tds[0].text.strip(), "age": age, "ofcps": ofcps})
+        return pd.DataFrame(data)
+
+    # 임원 현황 -> 생년월일 용
+    def get_executives_df(self) -> pd.DataFrame:
+        merged_ = self.get_registered_executives_df()
+        unregistered_ = self.get_unregistered_executives_df()
+
+        if not unregistered_.empty:
+            merged_ = pd.concat([merged_, unregistered_])
+
+        custom_order = {"회장": 1, "부회장": 2, "대표이사": 3, "사장": 4, "부사장": 5}
+        merged_["sort_order"] = merged_["ofcps"].apply(
+            lambda val: 6 if val not in custom_order else custom_order[val]
+        )
+
+        return merged_.sort_values(["sort_order"]).drop(columns="sort_order")
+
+    # 최대 주주 주식 보유 현황
+    def get_shareholders_df(self) -> pd.DataFrame:
+        url = "https://opendart.fss.or.kr/api/hyslrSttus.json"
+        res = requests.get(url, params=self.report_params).json()
+
+        if not self.check_data_valid(res):
+            return pd.DataFrame()
+
+        data = []
+        for item in res["list"]:
+            stock_knd = item["stock_knd"]
+
+            if stock_knd == "우선주":
+                continue
+
+            name = item["nm"]
+            stock_ratio = item["trmend_posesn_stock_qota_rt"]
+
+            data.append({"name": name, "stock_ratio": stock_ratio})
+        return pd.DataFrame(data)
+
+    def get_main_shareholders_df(self) -> pd.DataFrame:
+        shareholders_df = self.get_shareholders_df()
+        executives_df = self.get_executives_df()
+
+        merged = pd.merge(
+            shareholders_df,
+            executives_df,
+            left_on=["name"],
+            right_on=["name"],
+            how="left",
+        ).dropna()
+        merged["sj_div"] = DetailDataSjDivs.SHAREHOLDERS.name
+        merged["sj_nm"] = "최대주주 주식소유 현황"
+        merged["name"] = (
+            merged["name"]
+            + "("
+            + merged["ofcps"]
+            + ","
+            + merged["age"].apply(lambda val: str(int(val)))
+            + ")"
+        )
+        merged.rename(
+            columns={"stock_ratio": "amount", "name": "account_nm"}, inplace=True
+        )
+
+        return merged[["sj_div", "sj_nm", "account_nm", "amount"]]
 
     def get_footnote_url(self):
         res = requests.get(self.url)
@@ -155,8 +303,8 @@ class Report:
 
         if self.is_connected:
             target = py_.find(candidates, lambda m: "연결" in m[0])
-
-        target = py_.find(candidates, lambda m: "연결" not in m[0])
+        else:
+            target = py_.find(candidates, lambda m: "연결" not in m[0])
 
         if not target:
             return None
@@ -164,8 +312,8 @@ class Report:
         viewer_url = "http://dart.fss.or.kr/report/viewer.do?"
         return f"{viewer_url}rcpNo={target[2]}&dcmNo={target[3]}&eleId={target[4]}&offset={target[5]}&length={target[6]}&dtd={target[7]}"
 
-    def get_footnote_detail_df(
-        self, footnote_data_sj_div: FootnoteDataSjDivs, unit: Units = Units.DEFAULT
+    def get_detail_data_df(
+        self, detail_data_sj_div: DetailDataSjDivs, unit: Units = Units.DEFAULT
     ) -> pd.DataFrame:
         footnote_url = self.get_footnote_url()
 
@@ -175,13 +323,13 @@ class Report:
         soup = bs(res.text, "html.parser")
 
         target_header = None
-        if footnote_data_sj_div == FootnoteDataSjDivs.EXPENSE:
+        if detail_data_sj_div == DetailDataSjDivs.EXPENSE:
             pair = re.compile(r"\d+\. 비용")
-            sj_div = FootnoteDataSjDivs.EXPENSE.name
+            sj_div = DetailDataSjDivs.EXPENSE.name
             sj_nm = "비용의 성격별 분류"
-        elif footnote_data_sj_div == FootnoteDataSjDivs.INVENTORY:
+        elif detail_data_sj_div == DetailDataSjDivs.INVENTORY:
             pair = re.compile(r"\d+\. 재고자산")
-            sj_div = FootnoteDataSjDivs.INVENTORY.name
+            sj_div = DetailDataSjDivs.INVENTORY.name
             sj_nm = "재고자산 내역"
         else:
             raise ValueError("Not proper detail_data_type")
@@ -195,7 +343,7 @@ class Report:
 
         unit_table = None
         for tag in target_header.find_next_siblings():
-            if tag.name == "table":
+            if tag.name == "table" and tag.text.strip():
                 unit_table = tag
                 break
 
@@ -216,7 +364,7 @@ class Report:
             unit_num = 1000 * 1000
         else:
             raise ValueError(
-                f"Invalid unit in footnote data in {self.corp_name} {self.report_code} {footnote_data_sj_div.name}"
+                f"Invalid unit in detail data in {self.corp_name} {self.report_code} {detail_data_sj_div.name}"
             )
 
         # 단위 조정
@@ -224,7 +372,7 @@ class Report:
 
         content_table = None
         for tag in unit_table.find_next_siblings():
-            if tag.name == "table":
+            if tag.name == "table" and tag.text.strip():
                 content_table = tag
                 break
 
@@ -244,10 +392,7 @@ class Report:
         # Extract data rows
         data = []
         for row in content_table.find("tbody").find_all("tr"):
-            account_nm = (
-                row.find_all("td")[0].text.strip().replace("\xa0", "").replace(" ", "")
-            )
-            account_nm = re.sub(r"\[\s]", "", account_nm)
+            account_nm = remove_escape_characters(row.find_all("td")[0].text.strip())
             amount = row.find_all("td")[col_index].text.strip().replace(",", "")
 
             try:

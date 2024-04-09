@@ -1,6 +1,7 @@
 import pandas as pd
+from pydash import py_
 
-from config import FootnoteDataSjDivs
+from config import DetailDataSjDivs
 from config import ReportCodes
 from config import ReportTypes
 from config import Units
@@ -72,21 +73,23 @@ class ReportCalculator:
 
             annual_df = pd.DataFrame()
             for report_type in ReportTypes:
+                print(f"\t{report_type.value} 데이터 처리 중...")
                 target_df = report.get_target_type_data(report_type=report_type)
                 target_df = self.refine_unit(target_df)
                 annual_df = self.reset_index_df(pd.concat([annual_df, target_df]))
 
-            for footnote_data_sj_div in FootnoteDataSjDivs:
-                if footnote_data_sj_div == FootnoteDataSjDivs.EMPLOYEE_STATUS:
-                    footnote_detail_df = report.get_employee_df()
+            for detail_data_sj_div in DetailDataSjDivs:
+                print(f"\t{detail_data_sj_div.value} 데이터 처리 중...")
+                if detail_data_sj_div == DetailDataSjDivs.EMPLOYEE_STATUS:
+                    detail_data_df = report.get_employee_df()
+                elif detail_data_sj_div == DetailDataSjDivs.SHAREHOLDERS:
+                    detail_data_df = report.get_main_shareholders_df()
                 else:
-                    footnote_detail_df = report.get_footnote_detail_df(
-                        footnote_data_sj_div=footnote_data_sj_div, unit=self.unit
+                    detail_data_df = report.get_detail_data_df(
+                        detail_data_sj_div=detail_data_sj_div, unit=self.unit
                     )
 
-                annual_df = self.reset_index_df(
-                    pd.concat([annual_df, footnote_detail_df])
-                )
+                annual_df = self.reset_index_df(pd.concat([annual_df, detail_data_df]))
 
             if annual_df.empty:
                 return pd.DataFrame()
@@ -99,6 +102,9 @@ class ReportCalculator:
         # 각 항목별, 분기별 데이터프레임 저장
         dfs_by_sj_div = {}
         for i, report_code in enumerate(ReportCodes):
+
+            print(f"{str(year)}.Q{i + 1} 데이터 처리 중...")
+
             amount_col_name = f"{str(year)}.{report_code.name}"
             report = Report(
                 corp_code=self.corp_code,
@@ -111,6 +117,7 @@ class ReportCalculator:
             has_quarter_data = False
             # 분기별 재무상태표, 손익계산서, 현금흐름표 정보 취합
             for report_type_idx, report_type in enumerate(ReportTypes):
+                print(f"\t{report_type.value} 데이터 처리 중...")
                 target_df = report.get_target_type_data(report_type=report_type)
                 target_df = self.refine_unit(target_df)
 
@@ -128,31 +135,46 @@ class ReportCalculator:
                 amount_cols.append(amount_col_name)
 
             # 분기별 재무제표 주석 (비용의 성격별 분류, 재고자산 내역, 임직원 현황) 취합
-            for footnote_data_sj_div in FootnoteDataSjDivs:
-                if footnote_data_sj_div.name not in dfs_by_sj_div:
-                    dfs_by_sj_div[footnote_data_sj_div.name] = []
+            for detail_data_sj_div in DetailDataSjDivs:
+                print(f"\t{detail_data_sj_div.value} 데이터 처리 중...")
+                if detail_data_sj_div.name not in dfs_by_sj_div:
+                    dfs_by_sj_div[detail_data_sj_div.name] = []
 
-                if footnote_data_sj_div == FootnoteDataSjDivs.EMPLOYEE_STATUS:
+                if detail_data_sj_div == DetailDataSjDivs.EMPLOYEE_STATUS:
                     df = report.get_employee_df()
+                elif detail_data_sj_div == DetailDataSjDivs.SHAREHOLDERS:
+                    df = report.get_main_shareholders_df()
                 else:
-                    df = report.get_footnote_detail_df(
-                        footnote_data_sj_div=footnote_data_sj_div, unit=self.unit
+                    df = report.get_detail_data_df(
+                        detail_data_sj_div=detail_data_sj_div, unit=self.unit
                     )
 
-                dfs_by_sj_div[footnote_data_sj_div.name].append(
+                dfs_by_sj_div[detail_data_sj_div.name].append(
                     {"col_name": amount_col_name, "df": df}
                 )
+
+            print(f"{str(year)}.Q{i + 1} 데이터 처리 완료\n")
 
         annual_df = pd.DataFrame()
 
         # 항목별, 분기별 데이터프레임을 연간 단위로 합치는 작업
+        # Todo. 중간에 비어있는 데이터프레임 처리 (ex. 1,2분기에는 데이터가 있는데 3분기에는 없는 경우)
         for sj_div in dfs_by_sj_div:
             sj_div_df = pd.DataFrame()
 
             for item in dfs_by_sj_div[sj_div]:
-                df = item["df"].rename(columns={"amount": item["col_name"]})
+                df = item["df"]
+                col_name = item["col_name"]
+
+                if df.empty:
+                    df = pd.DataFrame(
+                        [], columns=["sj_div", "sj_nm", "account_nm", col_name]
+                    )
+                else:
+                    df.rename(columns={"amount": col_name}, inplace=True)
+
                 if sj_div_df.empty:
-                    sj_div_df = df
+                    sj_div_df = df.copy()
                 else:
                     sj_div_df = pd.merge(
                         left=sj_div_df,
@@ -163,9 +185,10 @@ class ReportCalculator:
                     )
                     sj_div_df.fillna(0, inplace=True)
 
-            for col in sj_div_df.columns:
-                if sj_div_df[col].dtype in [int, float]:
-                    sj_div_df[col] = sj_div_df[col].apply(int)
+            if sj_div != DetailDataSjDivs.SHAREHOLDERS:
+                for col in sj_div_df.columns:
+                    if sj_div_df[col].dtype in [int, float]:
+                        sj_div_df[col] = sj_div_df[col].apply(int)
 
             annual_df = self.reset_index_df(pd.concat([annual_df, sj_div_df]))
 
@@ -179,7 +202,7 @@ class ReportCalculator:
         sj_divs = annual_df.sj_div.unique().tolist()
         # 손익계산서, 현금흐름표, 비용의 성격별 분류 -> 누적값에 대한 계산 필요
         # 재무상태표, 재고자산 현황, 임직원 현황 -> 값 그대로 사용
-        sj_divs_need_calculation = ["CIS", "CF", FootnoteDataSjDivs.EXPENSE.name]
+        sj_divs_need_calculation = ["CIS", "CF", DetailDataSjDivs.EXPENSE.name]
 
         # 계산의 편의를 위해 컬럼 역전. 기존에는 1분기 -> 4분기였다면, 4분기 -> 1분기 순으로 나열
         reversed_cols = list(reversed(amount_cols))
@@ -209,6 +232,7 @@ class ReportCalculator:
         join_on_columns = ["sj_div", "sj_nm", "account_nm"]
 
         for i, year in enumerate(range(start_year, end_year + 1)):
+            print(f"{str(year)}년도 데이터 처리중...")
             annual_data = self.get_annual_data(
                 year=year, by_quarter=by_quarter, is_accumulated=is_accumulated
             )
@@ -220,7 +244,10 @@ class ReportCalculator:
                     annual_data,
                     left_on=join_on_columns,
                     right_on=join_on_columns,
+                    how="outer",
                 )
+
+            print(f"{str(year)}년도 데이터 처리 완료\n")
 
         # Drop unused column
         total_df.drop(["sj_div"], axis=1, inplace=True)
@@ -255,11 +282,11 @@ class ReportCalculator:
         # Formatting cell width in excel file
         if not cell_width:
             if self.unit == Units.DEFAULT:
-                cell_width = 15
+                cell_width = 16
             elif self.unit == Units.THOUSAND:
                 cell_width = 12
             else:
-                cell_width = 9
+                cell_width = 8
 
         with pd.ExcelWriter(filename, engine="xlsxwriter") as writer:
             df_by_quarter.to_excel(
@@ -267,14 +294,12 @@ class ReportCalculator:
                 sheet_name="Quarter",
                 index=False,
                 header=True,
-                float_format="#,###",
             )
             df_by_year.to_excel(
                 writer,
                 sheet_name="Year",
                 index=False,
                 header=True,
-                float_format="#,###",
             )
 
             workbook = writer.book
