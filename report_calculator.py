@@ -79,6 +79,8 @@ class ReportCalculator:
             for detail_data_sj_div in DetailDataSjDivs:
                 if detail_data_sj_div == DetailDataSjDivs.EMPLOYEE_STATUS:
                     detail_data_df = report.get_employee_df()
+                elif detail_data_sj_div == DetailDataSjDivs.SHAREHOLDERS:
+                    detail_data_df = report.get_main_shareholders_df()
                 else:
                     detail_data_df = report.get_detail_data_df(
                         detail_data_sj_div=detail_data_sj_div, unit=self.unit
@@ -132,6 +134,8 @@ class ReportCalculator:
 
                 if detail_data_sj_div == DetailDataSjDivs.EMPLOYEE_STATUS:
                     df = report.get_employee_df()
+                elif detail_data_sj_div == DetailDataSjDivs.SHAREHOLDERS:
+                    df = report.get_main_shareholders_df()
                 else:
                     df = report.get_detail_data_df(
                         detail_data_sj_div=detail_data_sj_div, unit=self.unit

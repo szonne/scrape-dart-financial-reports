@@ -26,10 +26,9 @@ class Units(Enum):
 
 
 class DetailDataSjDivs(Enum):
-    EMPLOYEE_STATUS = "Employee status"
     EXPENSE = "Expense detail"
     INVENTORY = "Inventory detail"
-    EXECUTIVES = "Executives detail"
+    EMPLOYEE_STATUS = "Employee status"
     SHAREHOLDERS = "Shareholders detail"
 
 
